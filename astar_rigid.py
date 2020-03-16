@@ -4,7 +4,8 @@ import numpy as np
 from queue import PriorityQueue
 import cv2
 import time
-
+initial= 0,0
+goal= 3*math.sqrt(2), 3*math.sqrt(2)
 
 
 r = input("enter value of radius") #taking input for radius
@@ -47,8 +48,8 @@ def obstacle(x,y):
     else:False
     return flag
     
- #wriitng the condition for the case when start or goal node are defined in an obstacle
-if (obstacle(start_pos[0],start_pos[1])==False or (obstacle(goal[0],goal[1])==False)):
+ #writing the condition for the case when start or goal node are defined in an obstacle
+if (obstacle(initial[0],initial[1])==False or (obstacle(goal[0],goal[1])==False)):
         print("position not allowed")
         flag=False
 else:
@@ -60,8 +61,7 @@ def heuristics(current, goal): #defining heuristic function as euclidian distanc
     
     return h
 
-initial= 0,0
-goal= 3*math.sqrt(2), 3*math.sqrt(2)
+
 theta_s= 0 #(initial theta =0)
 r=1 # step size(can be modified)
 
