@@ -5,19 +5,15 @@ from queue import PriorityQueue
 import cv2
 import time
 
-grid_x = 200 #defining the grid width and height
-grid_y = 300
-theta_s=0
-img = np.zeros((grid_x, grid_y), np.uint8)
+
+
 r = input("enter value of radius") #taking input for radius
 
 c = input("enter value of clearance") #taking input for clearance
 
 d = int(r+c)
-O=0
-start_time = time.time() #taking the run time start
-start_pos = [5, 195,theta_s]  #defining the start position as per the requirements
-goal = [195,5] #defining the goal position as per the requirements
+
+#start_time = time.time() #taking the run time start
 solvable = True
 
 def obstacle(x,y):
