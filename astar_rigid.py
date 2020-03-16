@@ -71,12 +71,15 @@ visited[initial[0],initial[0],theta_s//30]
 def explore(i,j):
 
     for m in range(1,13):
-        while([i],[j])!=(goal[0],goal[1]):
-            i=initial[0]+r*(math.cos(m))
-            j= initial[1]+r*(math.sin(m))
-            k=theta_s+m*30
-            if heuristics([i,j],goal)< heuristics(initial,goal): # checking only nodes that are at minimum distance from goal than current node
-                visited[round(i)][round(j)][round(m)]=1  # for those nodes making the elements of matrix 1
-            return visited
-        
+        i=initial[0]+r*(math.cos(math.radians(m)))
+        j= initial[1]+r*(math.sin(math.radians(m)))
+        k=theta_s+m*30
+        if heuristics([i,j],goal)< heuristics(initial,goal): # checking only nodes that are at minimum distance from goal than current node
+            visited[round(i)][round(j)][m-1]=1 
+            print(initial,(math.cos(math.radians(m))))
+            print("yes",i,j,k,m)
+            print(heuristics((i,j),goal))
+            i=i+1
+            j=j+1
+
 
