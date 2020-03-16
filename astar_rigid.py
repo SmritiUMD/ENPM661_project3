@@ -57,3 +57,30 @@ if (obstacle(start_pos[0],start_pos[1])==False or (obstacle(goal[0],goal[1])==Fa
         flag=False
 else:
     pass
+
+def heuristics(current, goal): #defining heuristic function as euclidian distance between current node and goal
+
+    h=math.sqrt((current[0]-goal[0])**2 + (current[1]-goal[1])**2)
+    
+    return h
+
+initial= 0,0
+goal= 3*math.sqrt(2), 3*math.sqrt(2)
+theta_s= 0 #(initial theta =0)
+r=1 # step size(can be modified)
+
+visited=np.zeros((600,300,12))  # creating a matrix to append information of visited nodes
+visited[initial[0],initial[0],theta_s//30]
+
+def explore(i,j):
+
+    for m in range(1,13):
+        while([i],[j])!=(goal[0],goal[1]):
+            i=initial[0]+r*(math.cos(m))
+            j= initial[1]+r*(math.sin(m))
+            k=theta_s+m*30
+            if heuristics([i,j],goal)< heuristics(initial,goal): # checking only nodes that are at minimum distance from goal than current node
+                visited[round(i)][round(j)][round(m)]=1  # for those nodes making the elements of matrix 1
+            return visited
+        
+
