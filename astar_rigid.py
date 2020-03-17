@@ -23,38 +23,36 @@ def checkr(r):
         exit()
     else:
         pass
-
 def obstacle(x,y):
     flag=True
-    if (y>=(3/5)*x+(25-d)) and (y>=(-3/5)*x+(295-d)):
+    if (y>=(3/5)*x+(25-d)/R) and (y>=(-3/5)*x+(295-d)/R):
         flag=False
     elif (y>=(3/5)*x+55+d) or (y>=(-3/5)*x+325+d):
         flag=True
-    elif (x-225)**2+(y-50)**2<=(25+d)**2:
+    elif (x-math.ceil(225/R))**2+(y-math.ceil(50/r))**2<=(math.ceil((25+d)/R))**2:
         flag=False
-    elif (x-150)**2/(40+d)**2+(y-100)**2/(20+d)**2<=1:
+    elif (x-(math.ceil(150/R)))**2/(math.ceil((40+d)/R))**2+(y-(math.ceil(100/R)))**2/(math.ceil((20+d)/R))**2<=1:
         flag=False
-    elif (((x>=30.875 and x<=35.875) and (y>=((-1.71)*x+196.84-d))) or ((x>=35.875 and x<=100) and (y>=((0.53)*x+108.45-d)))):
+    elif (((x>=30.875/R and x<=35.875/R) and (y>=((-1.71)*x+(196.84-d)/R))) or ((x>=35.875/R and x<=100/R) and (y>=((0.53)*x+(108.45-d)/R)))):
         flag=False
-    elif ((x>=30.875 and x<=95) and (y>=((0.5380)*x+118.99+d))) or ((x>=95 and x<=100) and (y>=((-1.71)*x+332.45+d))):
+    elif ((x>=30.875/R and x<=95/R) and (y>=((0.5380)*x+(118.99+d)/R))) or ((x>=95/R and x<=100/R) and (y>=((-1.71)*x+(332.45+d)/R))):
         flag=False
-    elif (y>=(-7/5)*x+120 and y>=(7/5)*x-(90+d)) and (y<=(6/5)*x-10+d and y<=(-6/5)*x+170+d) :
+    elif (y>=(-7/5)*x+120/R and y>=(7/5)*x-(90+d)/R) and (y<=(6/5)*x-(10+d)/R and y<=(-6/5)*x+(170+d)/R) :
         flag=False
-    elif (y<=(-7/5)*x+120) and y<=(7/5)*x-20 and y>=15-d:
+    elif (y<=(-7/5)*x+120/R) and y<=(7/5)*x-20/R and y>=(15-d)/R:
         flag=False
-    elif y>=(7/5)*x-20 and y>=(-13)*x+340+d and y<=(-1)*x+100+d:
+    elif y>=(7/5)*x-20/R and y>=(-13)*x+(340+d)/R and y<=(-1)*x+(100+d)/R:
         flag=False
-    elif (y>=0 and y<=0+d):
+    elif (y>=0 and y<=0+d/R):
         flag=False
-    elif (y<=200 and y>=(200-d)):
+    elif (y<=200/R and y>=(200-d)/R):
         flag=False
-    elif (x>=0 and x<=d):
+    elif (x>=0 and x<=d/R):
         flag=False
-    elif (x<=300 and x>=(300-d)):
+    elif (x<=300/R and x>=(300-d)/R):
         flag=False
     else:False
     return flag
-    
  #writing the condition for the case when start or goal node are defined in an obstacle
 if (obstacle(initial[0],initial[1])==False or (obstacle(goal[0],goal[1])==False)):
         print("position not allowed")
