@@ -11,11 +11,18 @@ goal= 10,10
 r = input("enter value of radius") #taking input for radius
 
 c = input("enter value of clearance") #taking input for clearance
+R = input("enter value of resolution") #taking input for resolution
+
 
 d = int(r+c)
 
 #start_time = time.time() #taking the run time start
-
+def checkr(r):
+    if (250%R)!=0  or(150%R)!=0:
+        print("Please enter an achivable resolution")
+        exit()
+    else:
+        pass
 
 def obstacle(x,y):
     flag=True
