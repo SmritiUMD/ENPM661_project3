@@ -4,8 +4,8 @@ import numpy as np
 from queue import PriorityQueue
 import cv2
 import time
-initial= 0,0
-goal= 3*math.sqrt(2), 3*math.sqrt(2)
+initial= 5,5
+goal= 10,10
 
 
 r = input("enter value of radius") #taking input for radius
@@ -15,7 +15,7 @@ c = input("enter value of clearance") #taking input for clearance
 d = int(r+c)
 
 #start_time = time.time() #taking the run time start
-solvable = True
+
 
 def obstacle(x,y):
     flag=True
@@ -60,26 +60,51 @@ def heuristics(current, goal): #defining heuristic function as euclidian distanc
     h=math.sqrt((current[0]-goal[0])**2 + (current[1]-goal[1])**2)
     
     return h
-
+cost_list=[]
+costh_list=[]
+cost=float('Inf')
+cost_list.append(cost)
+cost_h=float('Inf')
+costh_list.append(cost_h)
 
 theta_s= 0 #(initial theta =0)
 r=1 # step size(can be modified)
 
-visited=np.zeros((600,300,12))  # creating a matrix to append information of visited nodes
-visited[initial[0],initial[0],theta_s//30]
+plot=np.zeros((600,300), np.uint8)  # creating a matrix to append information of visited nodes
+visited = set([]) #
+visited[initial[0],initial[0]]
+class Node:
+    def __init__(self, pos, cost, parent): #creating objects for position, cost and parent information
+        self.pos = pos
+        self.x = pos[0]
+        self.y = pos[1]
+        self.cost = cost
+        self.parent = parent
 
-def explore(i,j):
-
-    for m in range(1,13):
+def explore(node): #defining the function for exploring using a star
+    i = node.x
+    j = node.y
+    valid_paths=[]
+    for m in range(1,7):
         i=initial[0]+r*(math.cos(math.radians(m)))
         j= initial[1]+r*(math.sin(math.radians(m)))
         k=theta_s+m*30
-        if heuristics([i,j],goal)< heuristics(initial,goal): # checking only nodes that are at minimum distance from goal than current node
-            visited[round(i)][round(j)][m-1]=1 
-            print(initial,(math.cos(math.radians(m))))
-            print("yes",i,j,k,m)
-            print(heuristics((i,j),goal))
-            i=i+1
-            j=j+1
+        if obstacle(i,j)==True:  #checking for the obstacle space
+            # print ('in 2nd if exp')
+            cost_go = 1 
+            cost_h=heuristics([i,j],goal)
+            cost=cost_go+cost_h
+            valid_paths.append([(i,j), cost,cost_h,cost_go])
+        return valid_paths #returning all the valid paths that pass the conditions
 
 
+q = PriorityQueue() #defining a priority queue
+visited = set([]) #creating visited nodes
+node_objects = {}
+
+####
+distance = {}
+for i in range(0, 600):
+    for j in range(0, 300):
+        distance[str([i, j])] = 99999999 #making the value of all the unvisited nodes as infinity
+#####
