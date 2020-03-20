@@ -102,10 +102,12 @@ class Obstacle():
         fig, ax = plt.subplots()
         for i in range(1,len(self.plotData_X)+1):
             plt.cla()
-            plt.xlim(0,30)
-            plt.ylim(0,20)
+            plt.xlim(0,self.W)
+            plt.ylim(0,self.H)
             q = ax.quiver(self.plotData_X[:i], self.plotData_Y[:i], 
-                self.plotData_U[:i], self.plotData_V[:i],units='xy' ,scale=1, headwidth = 0.1,headlength=0)
+                self.plotData_U[:i], self.plotData_V[:i], units='xy' ,
+                scale = self.threshold, headwidth = 0.1, headlength=0,
+                width=0.2)
             plt.pause(0.0001)
 
         X,Y,U,V = [],[],[],[] 
@@ -117,11 +119,15 @@ class Obstacle():
             
         for i in range(1,len(X)+1):
             plt.cla()
-            plt.xlim(0,30)
-            plt.ylim(0,20)
+            plt.xlim(0,self.W)
+            plt.ylim(0,self.H)
             L = ax.quiver(self.plotData_X, self.plotData_Y, 
-                self.plotData_U, self.plotData_V,units='xy' ,scale=1, headwidth = 0.1,headlength=0)
-            q = ax.quiver(X[:i], Y[:i], U[:i], V[:i], units='xy', scale=1, color='r', headwidth = 1, headlength=0)
+                self.plotData_U, self.plotData_V, units='xy',
+                scale=self.threshold, headwidth = 0.1, headlength=0,
+                width=0.2)
+            q = ax.quiver(X[:i], Y[:i], U[:i], V[:i], units='xy', 
+                scale=self.threshold, color='r', headwidth = 1, 
+                headlength=0, width = 0.2)
             plt.pause(0.0001)
 
         plt.ioff()
@@ -197,7 +203,8 @@ class pathFinder():
             track.append(currentNode)
         print("-------------------")
         print("Trackback")
-        print(track)
+        # print(track)
+        track.reverse()
         return track
 
     def findPath(self):
@@ -246,52 +253,7 @@ class pathFinder():
         return
 
 
-    # def findPath(self):
-    #     selfID = 1
-    #     self.initialCheck()
-    #     while len(self.Data)>0:
-    #         presentNode = heappop(self.Data)
-    #         # currentNode = self.nodeData[currentNodeID]
-    #         if self.goalReached(presentNode):
-    #             self.goalReach = True
-    #             print(" Goal Reached ")
-    #             # self.obstacle.addVisited()
-    #             # self.obstacle.plotAll()
-    #             self.trackBack(presentNode)
-    #             return
-
-    #         for action in self.actionSet:
-    #             ##### node = [ x , y , angle , cost]
-    #             ##### Data = [ cost , selfID , parentID ]
-    #             newNodeX = presentNode[1] + action[0]
-    #             newNodeY = presentNode[2] + action[1]
-    #             newNodeA = action[2]
-    #             newNode = [0, newNodeX, newNodeY, newNodeA]
-    #             newCost = presentNode[0] + action[3] + self.heuristics(newNode)
-    #             newNode[0] = newCost
-    #             print("Found a new node " + str(newNode))
-    #             # print(newNode)
-    #             if not self.obstacle.checkVisited(newNode):
-    #                 ##### Node is not visited so add to data
-    #                 self.obstacle.addVisited(newNode, presentNode)
-    #                 # self.nodeData.append(newNode)
-    #                 heappush(self.Data, newNode)
-    #                 # self.allData.append([newCost, selfID, currentNodeID])
-    #                 selfID += 1
-    #             else: #### Node is visited so check previous cost
-    #                 previousVisited = self.obstacle.findVisited(newNode)
-    #                 # previousNode = self.nodeData[previousVisited]
-    #                 previousCost = previousVisited[3]
-    #                 if previousCost > newCost:
-    #                     # self.nodeData.append(newNode)
-    #                     self.obstacle.addVisited(newNode, presentNode)
-    #                     # self.allData[]
-    #     print("Could not reach goal..")
-    #     return
-
-
-
 initial = [5,5,0]
 goal = [20,20,0]
-solver = pathFinder(initial, goal, thetaStep=30, stepSize=3)
+solver = pathFinder(initial, goal, thetaStep=30, stepSize=1)
 solver.findPath()
