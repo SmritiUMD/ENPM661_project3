@@ -1,177 +1,235 @@
-
+import sys
+sys.path.remove(sys.path[1])
 import math
 import numpy as np
 from queue import PriorityQueue
+from heapq import heappush, heappop
 import cv2
 import time
-initial= 5,5
-goal= 10,10
+import matplotlib.pyplot as plt
+
+# r = input("enter value of radius") #taking input for radius
+
+# c = input("enter value of clearance") #taking input for clearance
+# R = int(input("enter value of resolution")) #taking input for resolution
 
 
-r = input("enter value of radius") #taking input for radius
+# d = int(r+c)
+# solvable=True
 
-c = input("enter value of clearance") #taking input for clearance
-R = int(input("enter value of resolution")) #taking input for resolution
+class Obstacle():
+    def __init__(self, width = 300, height = 200, r = 1, c = 1, threshold=0.5, thetaStep = 30):
+        self.threshold = threshold #### Resolution
+        self.W = int(width/threshold) 
+        self.H = int(height/threshold) 
+        self.r = r
+        self.c = c
+        self.thetaStep = thetaStep ###
+        ### all angles and cost and selfID
+        ### Fourth dimention [ x , y , theta , cost ] -- of parent
+        self.explored = np.zeros([self.H, self.W, 360//thetaStep, 4])
+        ### [ startX , startY , endX , endY ]
+        self.plotData_X = []
+        self.plotData_Y = []
+        self.plotData_U = []
+        self.plotData_V = []
 
+    def CheckInObstacle(self, x, y):
+        d = self.r + self.c
+        R = 1
+        flag = True
+        if (y>=(3/5)*x+(25-d)/R) and (y>=(-3/5)*x+(295-d)/R):
+            flag = False
+        elif (y>=(3/5)*x+(55+d)/R) or (y>=(-3/5)*x+(325+d)/R):
+            flag = True
+        elif (x-math.ceil(225/R))**2+(y-math.ceil(50/R))**2<=(math.ceil((25+d)/R))**2:
+            flag = False
+        elif (x-(math.ceil(150/R)))**2/(math.ceil((40+d)/R))**2+(y-(math.ceil(100/R)))**2/(math.ceil((20+d)/R))**2<=1:
+            flag = False
+        elif (((x>=30.875/R and x<=35.875/R) and (y>=((-1.71)*x+(196.84-d)/R))) or ((x>=35.875/R and x<=100/R) and (y>=((0.53)*x+(108.45-d)/R)))):
+            flag = False
+        elif ((x>=30.875/R and x<=95/R) and (y>=((0.5380)*x+(118.99+d)/R))) or ((x>=95/R and x<=100/R) and (y>=((-1.71)*x+(332.45+d)/R))):
+            flag = True
+        elif (y>=(-7/5)*x+120/R and y>=(7/5)*x-(90+d)/R) and (y<=(6/5)*x-(10+d)/R and y<=(-6/5)*x+(170+d)/R) :
+            flag = False
+        elif (y<=(-7/5)*x+120/R) and y<=(7/5)*x-20/R and y>=(15-d)/R:
+            flag = False
+        elif y>=(7/5)*x-20/R and y>=(-13)*x+(340+d)/R and y<=(-1)*x+(100+d)/R:
+            flag = False
+        elif (y>=0 and y<=0+d/R):
+            flag = False
+        elif (y<=200/R and y>=(200-d)/R):
+            flag = False
+        elif (x>=0 and x<=d/R):
+            flag = False
+        elif (x<=300/R and x>=(300-d)/R):
+            flag = False
+        else:
+            flag = True
+        return flag
 
-d = int(r+c)
-solvable=True
+    def checkVisited(self, node):
+        #### node = [ cost , x , y , angle ]
+        checkPosX = int(round(node[1]/self.threshold))
+        checkPosY = int(round(node[2]/self.threshold))
+        checkPosA = int(node[3]//self.thetaStep)
+        if self.explored[checkPosX, checkPosY, checkPosA,3] != 0:
+            return True ##### Yes...it is visited
+        else:
+            return False ##### Not visited
 
-#start_time = time.time() #taking the run time start
-def checkr(R):
-    if (250%R)!=0  or(150%R)!=0:
-        print("Please enter an achivable resolution")
-        exit()
-    else:
+    def findVisited(self, node):
+        checkPosX = int(round(node[1]/self.threshold))
+        checkPosY = int(round(node[2]/self.threshold))
+        checkPosA = int(node[3]//self.thetaStep)
+        # print(checkPosX, checkPosY, checkPosA)
+        return self.explored[checkPosX, checkPosY, checkPosA, :]
+
+    def addVisited(self, node, parentNode):
+        checkPosX = int(round(node[1]/self.threshold))
+        checkPosY = int(round(node[2]/self.threshold))
+        checkPosA = int(node[3]//self.thetaStep)
+        self.plotData_X.append(parentNode[1])
+        self.plotData_Y.append(parentNode[2])
+        self.plotData_U.append(node[1] - parentNode[1]) 
+        self.plotData_V.append(node[2] - parentNode[2])
+        # self.explored[checkPosX, checkPosY, checkPosA, 3] = newCost
+        self.explored[checkPosX, checkPosY, checkPosA, :] = np.array(parentNode)
+        return
+
+    def plotAll(self):
+        plt.ion()
+        fig, ax = plt.subplots()
+        for i in range(1,len(self.plotData_X)):
+            print(self.plotData_X[i],
+                self.plotData_Y[i],
+                self.plotData_U[i],
+                self.plotData_V[i])
+            q = ax.quiver(self.plotData_X[:i], self.plotData_Y[:i], 
+                self.plotData_U[:i], self.plotData_V[:i],units='xy' ,scale=1, headwidth = 0.1,headlength=0)
+            plt.xlim(0,30)
+            plt.ylim(0,20)
+            plt.pause(0.0001)
+            plt.cla()
+        plt.ioff()
+        plt.show()
+
+class pathFinder():
+    def __init__(self, initial, goal, thetaStep = 30, stepSize = 1, goalThreshold = 1.5,
+        width = 300, height = 200, threshold = 0.5):
+        self.initial = initial
+        self.goal = goal
+        ##### node = [ x , y , angle , cost ]
+        self.nodeData = []
+        ##### [ cost , selfID , parentID ]
+        ##### selfID and parentID are index in nodeData
+        ##### [ cost , x , y , angle ]
+        self.Data = []
+        self.allData = []
+        self.thetaStep = thetaStep
+        self.stepSize = stepSize
+        self.goalThreshold = goalThreshold
+        self.setActions()
+        self.obstacle = Obstacle(width, height, r = 1, c = 1, threshold=0.5, thetaStep=self.thetaStep)
+
+    def setActions(self):
+        self.actionSet = []
+        for angle in np.arange(0, 360, self.thetaStep):
+            ang = math.radians(angle)
+            x = self.stepSize*math.cos(ang)
+            y = self.stepSize*math.sin(ang)
+            costToGo = 1
+            #### Action  --- [ x , y , angle , cost ] ----
+            self.actionSet.append([x, y, angle, costToGo])
         pass
 
+    def initialCheck(self):
+    #writing the condition for the case when start or goal node are defined in an obstacle
+        # if (self.obstacle(initial[0],initial[1])==False or (self.obstacle(goal[0],goal[1])==False)):
+        if False:
+            print("position not allowed")
+            return False
+        else:
+            # heappush(self.Data, [0,0,0])
+            cost = math.sqrt((self.initial[0] - self.goal[0])**2 + (self.initial[1] - self.goal[1])**2)
+            heappush(self.Data, [cost, self.initial[0], self.initial[1], self.initial[2]])
+            # self.allData([0,0,0])
+            self.nodeData.append([self.initial[0], self.initial[1], self.initial[2], 0])
+            return True
 
-def obstacle(x,y):
-    flag=True
-    if (y>=(3/5)*x+(25-d)/R) and (y>=(-3/5)*x+(295-d)/R):
-        flag=False
-    elif (y>=(3/5)*x+(55+d)/R) or (y>=(-3/5)*x+(325+d)/R):
-        flag=True
-    elif (x-math.ceil(225/R))**2+(y-math.ceil(50/R))**2<=(math.ceil((25+d)/R))**2:
-        flag=False
-    elif (x-(math.ceil(150/R)))**2/(math.ceil((40+d)/R))**2+(y-(math.ceil(100/R)))**2/(math.ceil((20+d)/R))**2<=1:
-        flag=False
-    elif (((x>=30.875/R and x<=35.875/R) and (y>=((-1.71)*x+(196.84-d)/R))) or ((x>=35.875/R and x<=100/R) and (y>=((0.53)*x+(108.45-d)/R)))):
-        flag=False
-    elif ((x>=30.875/R and x<=95/R) and (y>=((0.5380)*x+(118.99+d)/R))) or ((x>=95/R and x<=100/R) and (y>=((-1.71)*x+(332.45+d)/R))):
-        flag=False
-    elif (y>=(-7/5)*x+120/R and y>=(7/5)*x-(90+d)/R) and (y<=(6/5)*x-(10+d)/R and y<=(-6/5)*x+(170+d)/R) :
-        flag=False
-    elif (y<=(-7/5)*x+120/R) and y<=(7/5)*x-20/R and y>=(15-d)/R:
-        flag=False
-    elif y>=(7/5)*x-20/R and y>=(-13)*x+(340+d)/R and y<=(-1)*x+(100+d)/R:
-        flag=False
-    elif (y>=0 and y<=0+d/R):
-        flag=False
-    elif (y<=200/R and y>=(200-d)/R):
-        flag=False
-    elif (x>=0 and x<=d/R):
-        flag=False
-    elif (x<=300/R and x>=(300-d)/R):
-        flag=False
-    else:False
-    return flag
- #writing the condition for the case when start or goal node are defined in an obstacle
-if (obstacle(initial[0],initial[1])==False or (obstacle(goal[0],goal[1])==False)):
-        print("position not allowed")
-        solvable=False
-else:
-    pass
+    def heuristics(self, current): #defining heuristic function as euclidian distance between current node and goal
+        h = math.sqrt((current[1] - self.goal[0])**2 + (current[2] - self.goal[1])**2)
+        # h = math.sqrt((current[0] - self.goal[0])**2 + (current[1] - self.goal[1])**2 + (current[2] - self.goal[2])**2)
+        return h
 
-def heuristics(current, goal): #defining heuristic function as euclidian distance between current node and goal
+    def goalReached(self, current):  # function to check if the explored point is inside threshold area around the goal or not
+        x, y = current[1], current[2]
+        # ((x - goal[0])**2 + (y - goal[1])**2 <= (self.goalThreshold)**2) and (abs(self.goal[2] - current[2]) <= angleThreshold):
+        if (x - goal[0])**2 + (y - goal[1])**2 <= (self.goalThreshold)**2:
+            return True
+        else:
+            return False
 
-    h=math.sqrt((current[0]-goal[0])**2 + (current[1]-goal[1])**2)
-    
-    return h
+    def trackBack(self, presentNode):
+        track = []
+        currentNode = presentNode
+        track.append(self.goal)
+        track.append(currentNode)
+        while currentNode != self.initial:
+            # print(1)
+            currentNode = list(self.obstacle.findVisited(currentNode))
+            print(currentNode)
+            track.append(currentNode)
+        print("-------------------")
+        print("Trackback")
+        print(track)
+        return
 
 
-def goal_check(i,j):  # function to check if the explored point is inside threshold area around the goal or not
-    if (i-goal[0])**2+(j-goal[1])**2<=(1.5)**2:
-        k=2
-    else:
-        k=0
-    return k
+    def findPath(self):
+        selfID = 1
+        self.initialCheck()
+        while len(self.Data)>0:
+            presentNode = heappop(self.Data)
+            # currentNode = self.nodeData[currentNodeID]
+            if self.goalReached(presentNode):
+                self.goalReach = True
+                print(" Goal Reached ")
+                # self.obstacle.addVisited()
+                # self.obstacle.plotAll()
+                self.trackBack(presentNode)
+                return
 
+            for action in self.actionSet:
+                ##### node = [ x , y , angle , cost]
+                ##### Data = [ cost , selfID , parentID ]
+                newNodeX = presentNode[1] + action[0]
+                newNodeY = presentNode[2] + action[1]
+                newNodeA = action[2]
+                newNode = [0, newNodeX, newNodeY, newNodeA]
+                newCost = presentNode[0] + action[3] + self.heuristics(newNode)
+                newNode[0] = newCost
+                print("Found a new node " + str(newNode))
+                # print(newNode)
+                if not self.obstacle.checkVisited(newNode):
+                    ##### Node is not visited so add to data
+                    self.obstacle.addVisited(newNode, presentNode)
+                    # self.nodeData.append(newNode)
+                    heappush(self.Data, newNode)
+                    # self.allData.append([newCost, selfID, currentNodeID])
+                    selfID += 1
+                else: #### Node is visited so check previous cost
+                    previousVisited = self.obstacle.findVisited(newNode)
+                    # previousNode = self.nodeData[previousVisited]
+                    previousCost = previousVisited[3]
+                    if previousCost > newCost:
+                        # self.nodeData.append(newNode)
+                        self.obstacle.addVisited(newNode, presentNode)
+                        # self.allData[]
+        print("Could not reach goal..")
+        return
 
-cost_list=[]
-costh_list=[]
-cost=float('Inf')
-cost_list.append(cost)
-cost_h=float('Inf')
-costh_list.append(cost_h)
-
-theta_s= 0 #(initial theta =0)
-r=1 # step size(can be modified)
-
-plot=np.zeros((600,300), np.uint8)  # creating a matrix to append information of visited nodes
-visited = set([]) #\
-
-class Node:
-    def __init__(self, pos, cost, parent): #creating objects for position, cost and parent information
-        self.pos = pos
-        self.x = pos[0]
-        self.y = pos[1]
-        self.cost = cost
-        self.parent = parent
-
-def explore(node): #defining the function for exploring using a star
-    i = node.x
-    j = node.y
-    valid_paths=[]
-    for m in range(1,7):
-        i=round(initial[0]+r*(math.cos(math.radians(m))))
-        j= round(initial[1]+r*(math.sin(math.radians(m))))
-        k=theta_s+m*30
-        if obstacle(i,j)==True:  #checking for the obstacle space
-            # print ('in 2nd if exp')
-            cost_go = 1 
-            cost_h=heuristics([i,j],goal)
-            cost=cost_go+cost_h
-            valid_paths.append([(i,j), cost,cost_h,cost_go])
-        return valid_paths #returning all the valid paths that pass the conditions
-
-distance = {}
-for i in range(0, math.ceil(600/R)):
-    for j in range(0, math.ceil(300/R)):
-        distance[str([i, j])] = 99999999 #making the value of all the unvisited nodes as infinity
-#####
-
-q = PriorityQueue() #defining a priority queue
-node_objects = {}
-distance[str(initial)] = 0 
-visited.add(str(initial))
-node = Node(initial, 0, None)
-node_objects[str(node.pos)] = node
-q.put([node.cost, node.pos])  # adding the cost values in a priority queue
-reached = False
-
-
-####
-
-if solvable:  #logic for astar to check if the nodes traversed is a goal else continue
-    while not q.empty():
-        node_temp = q.get()
-        node = node_objects[str(node_temp[1])]
-        if  goal_check(node_temp[1][0], node_temp[1][1] )==2:
-            print("Reached")
-            node_objects[str(goal)] = Node(goal, node_temp[0], node)
-            reached = True
-            break
-
-        for next_node, cost, cost_h, cost_go in explore(node):
-
-            if str(next_node) in visited: #defining all the visited nodes and adding the cost values 
-                cost_temp = cost + distance[str(node.pos)]
-                if cost_temp < distance[str(next_node)]:
-                    distance[str(next_node)] = cost_temp
-                    node_objects[str(next_node)].parent = node
-            else:
-                visited.add(str(next_node)) #adding the next node value to the visited node
-                #img_show[next_node[1], next_node[0], :] = np.array([0,0,255])
-                absolute_cost = cost + distance[str(node.pos)]
-                distance[str(next_node)] = absolute_cost
-                new_node = Node(next_node, absolute_cost, node_objects[str(node.pos)])
-                node_objects[str(next_node)] = new_node
-                q.put([absolute_cost, new_node.pos])  #using the queue to add get the least cost 
-                print(visited)
-
-    #print("--- %s seconds ---" % (time.time() - start_time)) #printing the total time taken to run the logic
-              
-    #cv2.imshow('img', img_show)
-    #cv2.waitKey(10)
-    goal_node = node_objects[str(goal)]
-    parent_node = goal_node.parent  #adding the previous node traveled from the goal using backtracking to the parent node
-    while parent_node:
-        print(parent_node.pos, parent_node.cost)
-        #img_show[parent_node.pos[1], parent_node.pos[0],:] = np.array([255,0,0]) #using cv2.imshow to print the final path using backtracking
-        parent_node = parent_node.parent
-    #cv2.imshow('img', img_show)
-    #cv2.waitKey(0)
-
-
-
+initial = [5,5,0]
+goal = [20,20,0]
+solver = pathFinder(initial, goal, thetaStep=90, stepSize=3)
+solver.findPath()
