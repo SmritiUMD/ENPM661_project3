@@ -374,8 +374,6 @@ Args = Parser.parse_args()
 Args = Parser.parse_args()
 
 start = Args.Start
-
-start = Args.Start
 end = Args.End
 r = int(Args.RobotRadius)
 c = int(Args.Clearance)
@@ -391,7 +389,7 @@ goal = [int(i) for i in end[1:-1].split(',')]
 
 print(StepSize)
 print(thetaStep)
-# solver = pathFinder(initial, goal, thetaStep=thetaStep, stepSize=StepSize,
-#     goalThreshold = GoalThreshold, width = 300, height = 200, threshold = Threshold,
-#     r=r, c=c)
-# solver.findPath()
+solver = pathFinder(initial, goal, thetaStep=thetaStep, stepSize=StepSize,
+    goalThreshold = GoalThreshold, width = 300, height = 200, threshold = Threshold,
+    r=r, c=c)
+solver.findPath()
