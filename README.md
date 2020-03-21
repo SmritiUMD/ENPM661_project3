@@ -13,7 +13,7 @@ Code in this repository runs A* algorithm to find the path.
 
 Map for this problem statement is shown below.
 
-![Map](https://github.com/SmritiUMD/ENPM661_project3/map.png)
+![Map](https://github.com/SmritiUMD/ENPM661_project3/blob/master/map.png)
 
 ### How to run
 
