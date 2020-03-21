@@ -8,15 +8,6 @@ import cv2
 import time
 import matplotlib.pyplot as plt
 
-# r = input("enter value of radius") #taking input for radius
-
-# c = input("enter value of clearance") #taking input for clearance
-# R = int(input("enter value of resolution")) #taking input for resolution
-
-
-# d = int(r+c)
-# solvable=True
-
 class Obstacle():
     def __init__(self, width = 300, height = 200, r = 1, c = 1, threshold=0.5, thetaStep = 30):
         self.threshold = threshold #### Resolution
@@ -34,56 +25,183 @@ class Obstacle():
         self.plotData_U = []
         self.plotData_V = []
 
-    def CheckInObstacle(self, x, y):
-        d = self.r + self.c
-        R = 1
-        flag = True
-        if (y>=(3/5)*x+(25-d)/R) and (y>=(-3/5)*x+(295-d)/R):
-            flag = False
-        elif (y>=(3/5)*x+(55+d)/R) or (y>=(-3/5)*x+(325+d)/R):
-            flag = True
-        elif (x-math.ceil(225/R))**2+(y-math.ceil(50/R))**2<=(math.ceil((25+d)/R))**2:
-            flag = False
-        elif (x-(math.ceil(150/R)))**2/(math.ceil((40+d)/R))**2+(y-(math.ceil(100/R)))**2/(math.ceil((20+d)/R))**2<=1:
-            flag = False
-        elif (((x>=30.875/R and x<=35.875/R) and (y>=((-1.71)*x+(196.84-d)/R))) or ((x>=35.875/R and x<=100/R) and (y>=((0.53)*x+(108.45-d)/R)))):
-            flag = False
-        elif ((x>=30.875/R and x<=95/R) and (y>=((0.5380)*x+(118.99+d)/R))) or ((x>=95/R and x<=100/R) and (y>=((-1.71)*x+(332.45+d)/R))):
-            flag = True
-        elif (y>=(-7/5)*x+120/R and y>=(7/5)*x-(90+d)/R) and (y<=(6/5)*x-(10+d)/R and y<=(-6/5)*x+(170+d)/R) :
-            flag = False
-        elif (y<=(-7/5)*x+120/R) and y<=(7/5)*x-20/R and y>=(15-d)/R:
-            flag = False
-        elif y>=(7/5)*x-20/R and y>=(-13)*x+(340+d)/R and y<=(-1)*x+(100+d)/R:
-            flag = False
-        elif (y>=0 and y<=0+d/R):
-            flag = False
-        elif (y<=200/R and y>=(200-d)/R):
-            flag = False
-        elif (x>=0 and x<=d/R):
-            flag = False
-        elif (x<=300/R and x>=(300-d)/R):
-            flag = False
+    def plotSpace(self, ax):
+        ## Polygons
+        polygon_1 = [[20,25,75,100,75,50,20],[120,185,185,150,120,150,120]]
+        ang = math.radians(30)
+        polygon_2 = [[95, 30],
+                     [95 - 75*math.cos(ang), 30 + 75*math.sin(ang)],
+                     [95 - 75*math.cos(ang) + 10*math.sin(ang), 30 + 75*math.sin(ang) + 10*math.cos(ang)],
+                     [95 + 10*math.sin(ang), 30 + 10*math.cos(ang)],
+                     [95, 30]] 
+        polygon_2_X, polygon_2_Y = [i for i,j in polygon_2], [j for i,j in polygon_2]          
+        polygon_3 = [[225, 200, 225, 250, 225],
+                     [10, 25, 40, 25, 10]]
+        #### Circle
+        centX, centY,radii = 225,150,25 
+        circleX = [centX+radii*math.cos(i) for i in np.arange(0,2*3.14,0.01)]
+        circleY = [centY+radii*math.sin(i) for i in np.arange(0,2*3.14,0.01)]
+        ### Ellipse
+        centX, centY, a, b = 150, 100, 40, 20
+        ellipseX = [centX+a*math.cos(i) for i in np.arange(0,2*3.14,0.01)]
+        ellipseY = [centY+b*math.sin(i) for i in np.arange(0,2*3.14,0.01)]
+        
+        plt.plot(polygon_1[0],polygon_1[1])
+        plt.plot(polygon_2_X, polygon_2_Y)
+        plt.plot(polygon_3[0], polygon_3[1])
+        plt.plot(circleX, circleY)
+        plt.plot(ellipseX, ellipseY)
+        # testX = []
+        # testY = []
+        # for i in range(0,300,10):
+        #     for j in range(0,200,10):
+        #         if self.ObsCheck(i,j):
+        #             plt.scatter(i,200-j,c='r') 
+        # plt.show()
+        return ax
+
+    def ObsCheck(self, i, j):
+        # print(self.r)
+        if self.checkBoundary(i,j):
+            return False
+        elif self.checkInCircle(i,200-j,(225,50),25):
+            return False
+        elif self.chekckInEllipse(i,200-j,(150, 100), 20, 40):
+            return False
+        elif self.checkInQuad1(i,200-j,(25, 15), (75, 15), (50, 50), (20, 80), (100, 50)):
+            return False
+        elif self.checkInQuad2(i,200-j,(75, 15), (100, 50), (75, 80), (50, 50), (25, 15)):
+            return False
+        elif self.checkInQuad3(i,200-j,(225, 160), (250, 175), (225, 190), (200, 175)):
+            return False
+        elif self.checkInQuad4(i,200-j,(35, 123), (100, 161), (95, 170), (30, 132)):
+            return False
         else:
-            flag = True
-        return flag
+            return True
+
+    def checkBoundary(self,i,j):
+        # print(i,j)
+        if i < (300 - self.r - self.c) and i > (self.r + self.c) and j < (200 - self.r - self.c) and j > (self.r + self.c):
+            # print("In")
+            return False
+        return True
+    
+    def checkInCircle(self, i, j, center, radius):
+        ## i = x-direction
+        ## j = y-direction
+        center_x, center_y = center[0], center[1]
+        if ((i - center_x) ** 2 + (j - center_y) ** 2) <= (radius + self.r + self.c) ** 2:
+            return True
+        else:
+            return False
+
+    def chekckInEllipse(self, i, j, center, semiminor, semimajor):
+        center_x, center_y = center[0], center[1]
+        if (((i - center_x) / (semimajor + self.r + self.c)) ** 2 + ((j - center_y) / (semiminor + self.r + self.c)) ** 2) <= 1:
+            return True
+        else:
+            return False
+
+    def checkInQuad1(self, i, j, vertex1, vertex2, vertex3, vertex4, vertex5):
+        x1, y1 = vertex1[0], vertex1[1]
+        x2, y2 = vertex2[0], vertex2[1]
+        x3, y3 = vertex3[0], vertex3[1]
+        x4, y4 = vertex4[0], vertex4[1]
+        x5, y5 = vertex5[0], vertex5[1]
+        m1 = (y2 - y1) / (x2 - x1)
+        m2 = (y3 - y2) / (x3 - x2)
+        m3 = (y4 - y3) / (x4 - x3)
+        m4 = (y1 - y4) / (x1 - x4)
+        m5 = (y5 - y2) / (x5 - x2)
+        x = [x1, x2, x3, x4, x5]
+        y = [y1, y2, y3, y4, y5]
+        if (j >= m1 * i + y1 - m1 * x1 - ((self.r + self.c) * math.sqrt((m1 ** 2) + 1))) and (
+                j <= m2 * i + y2 - m2 * x2 + ((self.r + self.c) * math.sqrt((m2 ** 2) + 1))) and (
+                j <= m3 * i + y3 - m3 * x3 + ((self.r + self.c) * math.sqrt((m3 ** 2) + 1))) and (
+                j >= m4 * i + y4 - m4 * x4 - ((self.r + self.c) * math.sqrt((m4 ** 2) + 1))):
+            return True
+        if j <= m5 * i + y5 - m5 * x5 - ((self.r + self.c) * math.sqrt((m5 ** 2) + 1)):
+            return False
+        return False
+
+    def checkInQuad2(self, i, j, vertex1, vertex2, vertex3, vertex4, vertex5):
+        x1, y1 = vertex1[0], vertex1[1]
+        x2, y2 = vertex2[0], vertex2[1]
+        x3, y3 = vertex3[0], vertex3[1]
+        x4, y4 = vertex4[0], vertex4[1]
+        x5, y5 = vertex5[0], vertex5[1]
+        x = [x1, x2, x3, x4, x5]
+        y = [y1, y2, y3, y4, y5]
+        m1 = (y2 - y1) / (x2 - x1)
+        m2 = (y3 - y2) / (x3 - x2)
+        m3 = (y4 - y3) / (x4 - x3)
+        m4 = (y1 - y4) / (x1 - x4)
+        m5 = (y5 - y1) / (x5 - x1)
+        if (j >= m1 * i + y1 - m1 * x1 - ((self.r + self.c) * math.sqrt((m1 ** 2) + 1))) and (
+                j <= m2 * i + y2 - m2 * x2 + ((self.r + self.c) * math.sqrt((m2 ** 2) + 1))) and (
+                j <= m3 * i + y3 - m3 * x3 + ((self.r + self.c) * math.sqrt((m3 ** 2) + 1))) and (
+                j >= m4 * i + y4 - m4 * x4 - ((self.r + self.c) * math.sqrt((m4 ** 2) + 1))):
+            return True
+        if j <= m5 * i + y1 - m5 * x1 - ((self.r + self.c) * math.sqrt((m5 ** 2) + 1)):
+            return False
+        return False
+
+    def checkInQuad3(self, i, j, vertex1, vertex2, vertex3, vertex4):
+        x1, y1 = vertex1[0], vertex1[1]
+        x2, y2 = vertex2[0], vertex2[1]
+        x3, y3 = vertex3[0], vertex3[1]
+        x4, y4 = vertex4[0], vertex4[1]
+        m1 = (y2 - y1)/(x2 - x1)
+        m2 = (y3 - y2)/(x3 - x2)
+        m3 = (y4 - y3)/(x4 - x3)
+        m4 = (y1 - y4)/(x1 - x4)
+        if (j >= m1*i + y1 - m1*x1 - ((self.r + self.c)*math.sqrt((m1**2)+1))) and (
+                j <= m2*i + y2 - m2*x2 + ((self.r + self.c)*math.sqrt((m2**2)+1))) and (
+                j <= m3*i + y3 - m3*x3 + ((self.r + self.c)*math.sqrt((m3**2)+1))) and (
+                j >= m4*i + y4 - m4*x4 - ((self.r + self.c)*math.sqrt((m4**2)+1))):
+            return True
+        return False
+
+    def checkInQuad4(self, i, j, vertex1, vertex2, vertex3, vertex4):
+        x1, y1 = vertex1[0], vertex1[1]
+        x2, y2 = vertex2[0], vertex2[1]
+        x3, y3 = vertex3[0], vertex3[1]
+        x4, y4 = vertex4[0], vertex4[1]
+        m1 = (y2 - y1) / (x2 - x1)
+        m2 = (y3 - y2) / (x3 - x2)
+        m3 = (y4 - y3) / (x4 - x3)
+        m4 = (y1 - y4) / (x1 - x4)
+        if (j >= m1 * i + y1 - m1 * x1 - ((self.r + self.c) * math.sqrt((m1 ** 2) + 1))) and (
+                j <= m2 * i + y2 - m2 * x2 + ((self.r + self.c) * math.sqrt((m2 ** 2) + 1))) and (
+                j <= m3 * i + y3 - m3 * x3 + ((self.r + self.c) * math.sqrt((m3 ** 2) + 1))) and (
+                j >= m4 * i + y4 - m4 * x4 - ((self.r + self.c) * math.sqrt((m4 ** 2) + 1))):
+            return True
+        return False
 
     def checkVisited(self, node):
         #### node = [ cost , x , y , angle ]
         checkPosX = int(round(node[1]/self.threshold))
         checkPosY = int(round(node[2]/self.threshold))
         checkPosA = int(node[3]//self.thetaStep)
-        if self.explored[checkPosX, checkPosY, checkPosA,3] != 0:
+        print(node[1], node[2])
+        print(checkPosX, checkPosY)
+        if self.explored[checkPosY, checkPosX, checkPosA,3] != 0:
             return True ##### Yes...it is visited
         else:
             return False ##### Not visited
+
+    def discret(self,node):
+        checkPosX = int(round(node[1]/self.threshold))
+        checkPosY = int(round(node[2]/self.threshold))
+        checkPosA = int(node[3]//self.thetaStep)
+        return [node[0], checkPosY, checkPosX, checkPosA]
 
     def findVisited(self, node):
         checkPosX = int(round(node[1]/self.threshold))
         checkPosY = int(round(node[2]/self.threshold))
         checkPosA = int(node[3]//self.thetaStep)
         # print(checkPosX, checkPosY, checkPosA)
-        return self.explored[checkPosX, checkPosY, checkPosA, :]
+        return self.explored[checkPosY, checkPosX, checkPosA, :]
 
     def addVisited(self, node, parentNode):
         checkPosX = int(round(node[1]/self.threshold))
@@ -94,19 +212,22 @@ class Obstacle():
         self.plotData_U.append(node[1] - parentNode[1]) 
         self.plotData_V.append(node[2] - parentNode[2])
         # self.explored[checkPosX, checkPosY, checkPosA, 3] = newCost
-        self.explored[checkPosX, checkPosY, checkPosA, :] = np.array(parentNode)
+        self.explored[checkPosY, checkPosX, checkPosA, :] = np.array(parentNode)
         return
 
     def plotAll(self, path):
         plt.ion()
         fig, ax = plt.subplots()
-        for i in range(1,len(self.plotData_X)+1):
-            plt.cla()
-            plt.xlim(0,self.W)
-            plt.ylim(0,self.H)
-            q = ax.quiver(self.plotData_X[:i], self.plotData_Y[:i], 
-                self.plotData_U[:i], self.plotData_V[:i], units='xy' ,
-                scale = self.threshold, headwidth = 0.1, headlength=0,
+        # fig.canvas.manager.full_screen_toggle() # toggle fullscreen mode
+        # fig.show()
+        ax = self.plotSpace(ax)
+        for i in range(1,len(self.plotData_X)+1,3000):
+            # plt.cla()
+            plt.xlim(0,300)
+            plt.ylim(0,200)
+            q = ax.quiver(self.plotData_X[i:(i+3000)], self.plotData_Y[i:(i+3000)], 
+                self.plotData_U[i:(i+3000)], self.plotData_V[i:(i+3000)], units='xy' ,
+                scale = 1, headwidth = 0.1, headlength=0,
                 width=0.2)
             plt.pause(0.0001)
 
@@ -117,26 +238,26 @@ class Obstacle():
             U.append(path[i+1][1] - path[i][1])
             V.append(path[i+1][2] - path[i][2])
             
-        for i in range(1,len(X)+1):
-            plt.cla()
-            plt.xlim(0,self.W)
-            plt.ylim(0,self.H)
-            L = ax.quiver(self.plotData_X, self.plotData_Y, 
-                self.plotData_U, self.plotData_V, units='xy',
-                scale=self.threshold, headwidth = 0.1, headlength=0,
-                width=0.2)
-            q = ax.quiver(X[:i], Y[:i], U[:i], V[:i], units='xy', 
-                scale=self.threshold, color='r', headwidth = 1, 
-                headlength=0, width = 0.2)
+        for i in range(len(X)):
+            # plt.cla()
+            plt.xlim(0,300)
+            plt.ylim(0,200)
+            # plt.xlim(0,self.W)
+            # plt.ylim(0,self.H)
+            # L = ax.quiver(self.plotData_X, self.plotData_Y, 
+            #     self.plotData_U, self.plotData_V, units='xy',
+            #     scale=1, headwidth = 0.1, headlength=0,
+            #     width=0.2)
+            q = ax.quiver(X[i], Y[i], U[i], V[i], units='xy', 
+                scale=1, color='r', headwidth = 0.1, 
+                headlength=0, width = 0.7)
             plt.pause(0.0001)
-
+            # print(self.plotData_X[i],self.plotData_Y[i],self.plotData_U[i],self.plotData_V[i])
         plt.ioff()
         plt.show()
 
-
-
 class pathFinder():
-    def __init__(self, initial, goal, thetaStep = 30, stepSize = 1, goalThreshold = 1.5,
+    def __init__(self, initial, goal, thetaStep = 30, stepSize = 1, goalThreshold = 2,
         width = 300, height = 200, threshold = 0.5):
         self.initial = initial
         self.goal = goal
@@ -159,16 +280,19 @@ class pathFinder():
             ang = math.radians(angle)
             x = self.stepSize*math.cos(ang)
             y = self.stepSize*math.sin(ang)
-            costToGo = 1
+            costToCome = 1
             #### Action  --- [ x , y , angle , cost ] ----
-            self.actionSet.append([x, y, angle, costToGo])
+            self.actionSet.append([x, y, angle, costToCome])
         pass
 
     def initialCheck(self):
     #writing the condition for the case when start or goal node are defined in an obstacle
         # if (self.obstacle(initial[0],initial[1])==False or (self.obstacle(goal[0],goal[1])==False)):
-        if False:
-            print("position not allowed")
+        if not self.obstacle.ObsCheck(self.goal[0], 200-self.goal[1]):
+            print("Goal in obstacle field")
+            return False
+        elif not self.obstacle.ObsCheck(self.initial[0], 200-self.goal[1]):
+            print("Initial position in obstavle field")
             return False
         else:
             # heappush(self.Data, [0,0,0])
@@ -199,7 +323,7 @@ class pathFinder():
         while currentNode[1:] != self.initial:
             # print(1)
             currentNode = list(self.obstacle.findVisited(currentNode))
-            print(currentNode)
+            # print(currentNode)
             track.append(currentNode)
         print("-------------------")
         print("Trackback")
@@ -208,52 +332,51 @@ class pathFinder():
         return track
 
     def findPath(self):
-        self.initialCheck()
-        while len(self.Data)>0:
-            presentNode = heappop(self.Data)
-            previousCost, previousCostToCome = presentNode[0], presentNode[4]
-            if self.goalReached(presentNode):
-                self.goalReach = True
-                print(" Goal Reached ")
-                print(presentNode)
-                # self.obstacle.addVisited(presentNode)
-                path = self.trackBack(presentNode)
-                print(path)
-                self.obstacle.plotAll(path)
-                return
-            for action in self.actionSet:
-                ##### node = [ x , y , angle , cost]
-                ##### Data = [ cost , selfID , parentID ]
-                newNodeX = presentNode[1] + action[0]
-                newNodeY = presentNode[2] + action[1]
-                newNodeA = action[2]
-                newNode = [0, newNodeX, newNodeY, newNodeA, 0]
-                newCostToCome = previousCostToCome + action[3]
-                newNode[4] = newCostToCome
-                dg = self.heuristics(newNode)
-                # newNode[0] = newCost
-                # print("Found a new node " + str(newNode))
-                # print(newNode)
-                if not self.obstacle.checkVisited(newNode):
-                    ##### Node is not visited so add to data
-                    presentNode[0] = newCostToCome
-                    self.obstacle.addVisited(newNode, presentNode[:4])
-                    newNode[0] = newCostToCome + dg
-                    heappush(self.Data, newNode)
-                else: #### Node is visited so check previous cost
-                    previousVisited = self.obstacle.findVisited(newNode)
-                    # previousNode = self.nodeData[previousVisited]
-                    previousCost = previousVisited[3]
-                    if previousCost > newCostToCome:
-                        # self.nodeData.append(newNode)
-                        presentNode[0] = newCostToCome
-                        self.obstacle.addVisited(newNode, presentNode[:4])
-                        # self.allData[]
+        if self.initialCheck():
+            while len(self.Data)>0:
+                presentNode = heappop(self.Data)
+                previousCost, previousCostToCome = presentNode[0], presentNode[4]
+                if self.goalReached(presentNode):
+                    self.goalReach = True
+                    print(" Goal Reached ")
+                    print(presentNode)
+                    # self.obstacle.addVisited(presentNode)
+                    path = self.trackBack(presentNode)
+                    print(path)
+                    self.obstacle.plotAll(path)
+                    return
+                for action in self.actionSet:
+                    ##### node = [ x , y , angle , cost]
+                    ##### Data = [ cost , selfID , parentID ]
+                    newNodeX = presentNode[1] + action[0]
+                    newNodeY = presentNode[2] + action[1]
+                    newNodeA = action[2]
+                    newNode = [0, newNodeX, newNodeY, newNodeA, 0]
+                    newCostToCome = previousCostToCome + action[3]
+                    newNode[4] = newCostToCome
+                    costToGo = self.heuristics(newNode)
+                    # newNode[0] = newCost
+                    # print("Found a new node " + str(newNode))
+                    # print(newNode)
+                    if self.obstacle.ObsCheck(newNodeX, newNodeY):
+                        if not self.obstacle.checkVisited(newNode):
+                            ##### Node is not visited so add to data
+                            presentNode[0] = newCostToCome
+                            self.obstacle.addVisited(newNode, presentNode[:4])
+                            newNode[0] = newCostToCome + costToGo
+                            heappush(self.Data, newNode)
+                        else: #### Node is visited so check previous cost
+                            previousVisited = self.obstacle.findVisited(newNode)
+                            previousCost = previousVisited[0]
+                            if previousCost > newCostToCome:
+                                presentNode[0] = newCostToCome
+                                self.obstacle.addVisited(newNode, presentNode[:4])
+                                
         print("Could not reach goal..")
         return
 
-
-initial = [5,5,0]
-goal = [20,20,0]
-solver = pathFinder(initial, goal, thetaStep=30, stepSize=1)
+initial = [50,30,60]
+goal = [150,150,0]
+solver = pathFinder(initial, goal, thetaStep=30, stepSize=2)
 solver.findPath()
+# solver.obstacle.plotSpace()
