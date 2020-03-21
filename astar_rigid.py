@@ -2,11 +2,11 @@ import sys
 sys.path.remove(sys.path[1])
 import math
 import numpy as np
-from queue import PriorityQueue
 from heapq import heappush, heappop
 import cv2
 import time
 import matplotlib.pyplot as plt
+import argparse
 
 class Obstacle():
     def __init__(self, width = 300, height = 200, r = 1, c = 1, threshold=0.5, thetaStep = 30):
@@ -51,17 +51,10 @@ class Obstacle():
         plt.plot(polygon_3[0], polygon_3[1])
         plt.plot(circleX, circleY)
         plt.plot(ellipseX, ellipseY)
-        # testX = []
-        # testY = []
-        # for i in range(0,300,10):
-        #     for j in range(0,200,10):
-        #         if self.ObsCheck(i,j):
-        #             plt.scatter(i,200-j,c='r') 
-        # plt.show()
         return ax
 
     def ObsCheck(self, i, j):
-        # print(self.r)
+        # Check all the obstacles
         if self.checkBoundary(i,j):
             return False
         elif self.checkInCircle(i,200-j,(225,50),25):
@@ -183,8 +176,8 @@ class Obstacle():
         checkPosX = int(round(node[1]/self.threshold))
         checkPosY = int(round(node[2]/self.threshold))
         checkPosA = int(node[3]//self.thetaStep)
-        print(node[1], node[2])
-        print(checkPosX, checkPosY)
+        # print(node[1], node[2])
+        # print(checkPosX, checkPosY)
         if self.explored[checkPosY, checkPosX, checkPosA,3] != 0:
             return True ##### Yes...it is visited
         else:
@@ -242,23 +235,16 @@ class Obstacle():
             # plt.cla()
             plt.xlim(0,300)
             plt.ylim(0,200)
-            # plt.xlim(0,self.W)
-            # plt.ylim(0,self.H)
-            # L = ax.quiver(self.plotData_X, self.plotData_Y, 
-            #     self.plotData_U, self.plotData_V, units='xy',
-            #     scale=1, headwidth = 0.1, headlength=0,
-            #     width=0.2)
             q = ax.quiver(X[i], Y[i], U[i], V[i], units='xy', 
                 scale=1, color='r', headwidth = 0.1, 
                 headlength=0, width = 0.7)
             plt.pause(0.0001)
-            # print(self.plotData_X[i],self.plotData_Y[i],self.plotData_U[i],self.plotData_V[i])
         plt.ioff()
         plt.show()
 
 class pathFinder():
     def __init__(self, initial, goal, thetaStep = 30, stepSize = 1, goalThreshold = 2,
-        width = 300, height = 200, threshold = 0.5):
+        width = 300, height = 200, threshold = 0.5, r = 1, c = 1):
         self.initial = initial
         self.goal = goal
         ##### node = [ x , y , angle , cost ]
@@ -272,7 +258,7 @@ class pathFinder():
         self.stepSize = stepSize
         self.goalThreshold = goalThreshold
         self.setActions()
-        self.obstacle = Obstacle(width, height, r = 1, c = 1, threshold=0.5, thetaStep=self.thetaStep)
+        self.obstacle = Obstacle(width, height, r = r, c = c, threshold=threshold, thetaStep=self.thetaStep)
 
     def setActions(self):
         self.actionSet = []
@@ -375,8 +361,38 @@ class pathFinder():
         print("Could not reach goal..")
         return
 
-initial = [50,30,60]
-goal = [150,150,0]
-solver = pathFinder(initial, goal, thetaStep=30, stepSize=2)
+Parser = argparse.ArgumentParser()
+Parser.add_argument('--Start', default="[50,30,60]", help='Give inital point')
+Parser.add_argument('--End', default="[150,150,0]", help='Give final point')
+Parser.add_argument('--RobotRadius', default=1, help='Give robot radius')
+Parser.add_argument('--Clearance', default=1, help='Give robot clearance')
+Parser.add_argument('--ShowAnimation', default=1, help='1 if want to show animation else 0')
+Parser.add_argument('--Framerate', default=30, help='Will show next step after this many steps. Made for fast viewing')
+Parser.add_argument('--thetaStep', default=30, help='Possibilities of action for angle')
+Parser.add_argument('--StepSize', default=2, help='Step size')
+Parser.add_argument('--Threshold', default=0.5, help='Threshold value for appriximation')
+Parser.add_argument('--GoalThreshold', default=2, help='Circle radius for goal point')
+Args = Parser.parse_args()
+
+Args = Parser.parse_args()
+
+start = Args.Start
+
+start = Args.Start
+end = Args.End
+r = int(Args.RobotRadius)
+c = int(Args.Clearance)
+animation = int(Args.ShowAnimation)
+framerate = int(Args.Framerate)
+thetaStep = int(Args.thetaStep)
+StepSize = int(Args.StepSize)
+Threshold = float(Args.Threshold)
+GoalThreshold = float(Args.GoalThreshold)
+
+initial = [int(i) for i in start[1:-1].split(',')]
+goal = [int(i) for i in end[1:-1].split(',')] 
+
+solver = pathFinder(initial, goal, thetaStep=thetaStep, stepSize=StepSize,
+    goalThreshold = GoalThreshold, width = 300, height = 200, threshold = Threshold,
+    r=r, c=c)
 solver.findPath()
-# solver.obstacle.plotSpace()
