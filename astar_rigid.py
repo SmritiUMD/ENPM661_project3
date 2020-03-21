@@ -1,9 +1,6 @@
-import sys
-sys.path.remove(sys.path[1])
 import math
 import numpy as np
 from heapq import heappush, heappop
-import cv2
 import time
 import matplotlib.pyplot as plt
 import argparse
@@ -392,7 +389,9 @@ GoalThreshold = float(Args.GoalThreshold)
 initial = [int(i) for i in start[1:-1].split(',')]
 goal = [int(i) for i in end[1:-1].split(',')] 
 
-solver = pathFinder(initial, goal, thetaStep=thetaStep, stepSize=StepSize,
-    goalThreshold = GoalThreshold, width = 300, height = 200, threshold = Threshold,
-    r=r, c=c)
-solver.findPath()
+print(StepSize)
+print(thetaStep)
+# solver = pathFinder(initial, goal, thetaStep=thetaStep, stepSize=StepSize,
+#     goalThreshold = GoalThreshold, width = 300, height = 200, threshold = Threshold,
+#     r=r, c=c)
+# solver.findPath()
