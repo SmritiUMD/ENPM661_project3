@@ -27,7 +27,7 @@ There are several arguments you can use to run this code. To see all the possibl
 ```
 git clone https://github.com/SmritiUMD/ENPM661_project3
 cd ENPM661_project3
-python3 astar_rigid.py --help
+python3 Astar_rigid.py --help
 ```
 
 These are all the arguments
@@ -57,10 +57,10 @@ optional arguments:
 To find the path between start point, which is at [50,30,60] and end point, which is at [150,150,0], you can use following command,
 
 ```
-python3 astar_rigid.py --Start='[50,30,60]' --End='[150,150,0]'
+python3 Astar_rigid.py --Start='[50,30,60]' --End='[150,150,0]'
 ```
 To run this program with different angle steps you can use `--thetaStep` argument. To run solver with different step size use the following command.
 
 ```
-python3 astar_rigid.py --Start='[50,30,60]' --End='[150,150,0]' --StepSize=2 --thetaStep=30
+python3 Astar_rigid.py --Start='[50,30,60]' --End='[150,150,0]' --StepSize=2 --thetaStep=30
 ```
