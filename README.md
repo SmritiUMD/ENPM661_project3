@@ -9,6 +9,11 @@ Code in this repository runs A* algorithm to find the path.
 - matplotlib
 - numpy
 
+You can install these dependencies using python pip package installer.
+```
+sudo pip3 install matplotlib numpy
+```
+
 ### Map
 
 Map for this problem statement is shown below.
