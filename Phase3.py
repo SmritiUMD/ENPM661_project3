@@ -171,18 +171,22 @@ class pathFinder():
 
     def setActions(self):
         self.actionSet = []
+        t=0
+        dt=0.1
 
         actions=[[0,0],[0,self.Ur],[self.Ul,0],[0,self.Ul],[self.Ur,0],[self.Ul,self.Ur],[self.Ur,self.Ul],[self.Ur,self.Ur],[self.Ul,self.Ul]]
         initial[2]=3.14*initial[2]/180  
         angle=initial[2]   
-        for action in actions:
-            x=(self.wheelRadius)*(action[0]+action[1])*math.cos(angle)       
-            y=(self.wheelRadius)*(action[0]+action[1])*math.sin(angle)       
-            dtheta=(self.wheelRadius/self.wheelLength)*(action[0]-action[1])              
-            angle=angle+dtheta
-            costToCome = math.sqrt((x-initial[0])**2+(initial[1]-y)**2)
-            self.actionSet.append([x, y, angle, costToCome])
-            print(self.actionSet)
+        while(t<1):
+            t=t+dt
+            for action in actions:
+                x=(self.wheelRadius)*(action[0]+action[1])*math.cos(angle)*dt       
+                y=(self.wheelRadius)*(action[0]+action[1])*math.sin(angle)*dt      
+                dtheta=(self.wheelRadius/self.wheelLength)*(action[0]-action[1])              
+                angle=angle+dtheta
+                costToCome = math.sqrt((x-initial[0])**2+(initial[1]-y)**2)
+                self.actionSet.append([x, y, angle, costToCome])
+                print(self.actionSet)
         pass
 
     def initialCheck(self):
