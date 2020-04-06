@@ -6,7 +6,9 @@ import matplotlib.pyplot as plt
 import argparse
 
 class Obstacle():
-    def __init__(self, width = 10, height = 10, r = 1, c = 1, threshold=0.01, thetaStep = 30):
+    def __init__(self, width = 10, height = 10, r = 1, c = 1, threshold=0.01, 
+            thetaStep = 30, actions=None, wheelLength = 1, 
+            wheelRadius = 1):
         self.threshold = threshold #### Resolution
         self.W = int(width/threshold) +1
         self.H = int(height/threshold) +1
@@ -17,17 +19,23 @@ class Obstacle():
         ### Fourth dimention [ cost , x , y , theta ] -- of parent
         # self.explored = np.zeros([self.H, self.W, 360//thetaStep, 4])
         self.explored = np.zeros([self.H, self.W, 4])
+        self.actionIndexMatrix = np.zeros([self.H, self.W])
         ### [ startX , startY , endX , endY ]
         self.plotData_X = []
         self.plotData_Y = []
+        self.plotData_A = []
         self.plotData_U = []
         self.plotData_V = []
+        self.whcihAction = []
         plt.ion()
         self.fig, self.ax = plt.subplots()
         self.plotSpace()
-
-    def plotCurve(self, node, parentNode):
+        self.actions = actions
+        self.wheelRadius = wheelRadius
+        self.wheelLength = wheelLength
         
+
+    # def plotCurve(self, node, parentNode):
 
     def plotSpace(self):
         centX, centY, radii = 0,0,1
@@ -172,58 +180,68 @@ class Obstacle():
         # checkPosA = int(node[3])*dt 
         # print(checkPosX, checkPosY, checkPosA)
         i,j,k = self.getMatrixIndices(node)
-        return self.explored[i, j, :]
+        return self.explored[i, j, :], self.actionIndexMatrix[i,j]
 
-    def addVisited(self, node, parentNode):
+    def addVisited(self, node, parentNode, actionIndex):
         # checkPosX = int(round(node[1]/self.threshold))
         # checkPosY = int(round(node[2]/self.threshold))
         # checkPosA = int(node[3])
         i,j,k = self.getMatrixIndices(node)
         self.plotData_X.append(parentNode[1])
         self.plotData_Y.append(parentNode[2])
-        self.plotData_U.append(node[1] - parentNode[1]) 
-        self.plotData_V.append(node[2] - parentNode[2])
-        self.ax.scatter(node[1], node[2])
-        plt.pause(0.0001)
+        self.plotData_A.append(parentNode[3])
+        # self.plotData_U.append(node[1] - parentNode[1]) 
+        # self.plotData_V.append(node[2] - parentNode[2])
+        self.whcihAction.append(actionIndex)
+        # self.ax.scatter(node[1], node[2])
+        # plt.pause(0.0001)
         # self.explored[checkPosX, checkPosY, checkPosA, 3] = newCost
         self.explored[i, j, :] = np.array(parentNode)
+        self.actionIndexMatrix[i,j] = actionIndex
         return
 
     # def plotAll(self):
 
-    def plotAll(self, path):
-        plt.ion()
-        fig, ax = plt.subplots()
-        # fig.canvas.manager.full_screen_toggle() # toggle fullscreen mode
-        # fig.show()
-        ax = self.plotSpace(ax)
-        for i in range(1,len(self.plotData_X)+1,3000):
-            # plt.cla()
-            plt.xlim(0,300)
-            plt.ylim(0,200)
-            q = ax.quiver(self.plotData_X[i:(i+3000)], self.plotData_Y[i:(i+3000)], 
-                self.plotData_U[i:(i+3000)], self.plotData_V[i:(i+3000)], units='xy' ,
-                scale = 1, headwidth = 0.1, headlength=0,
-                width=0.2)
+    def plotPath(self, path, trackIndex):
+        print(len(trackIndex), len(path))
+        for i in range(len(path)):
+            Xi = path[i][1]
+            Yi = path[i][2]
+            Thetai = path[i][3]
+            actionIndex = int(trackIndex[i])
+            UL, UR = self.actions[actionIndex][0], self.actions[actionIndex][1]
+            self.plotCurve(Xi, Yi, Thetai, UL, UR, color="red")
             plt.pause(0.0001)
+        pass
 
-        X,Y,U,V = [],[],[],[] 
-        for i in range(len(path)-1):
-            X.append(path[i][1])
-            Y.append(path[i][2])
-            U.append(path[i+1][1] - path[i][1])
-            V.append(path[i+1][2] - path[i][2])
-            
-        for i in range(len(X)):
-            # plt.cla()
-            plt.xlim(0,300)
-            plt.ylim(0,200)
-            q = ax.quiver(X[i], Y[i], U[i], V[i], units='xy', 
-                scale=1, color='r', headwidth = 0.1, 
-                headlength=0, width = 0.7)
-            plt.pause(0.0001)
-        plt.ioff()
-        plt.show()
+    def explorationPlot(self):
+        for i in range(len(self.plotData_X)):
+            Xi = self.plotData_X[i]
+            Yi = self.plotData_Y[i]
+            Thetai = self.plotData_A[i]
+            actionIndex = self.whcihAction[i]
+            UL, UR = self.actions[actionIndex][0], self.actions[actionIndex][1]
+            self.plotCurve(Xi, Yi, Thetai, UL, UR)
+            if i%25==0:
+                plt.pause(0.0001)
+        pass
+
+    def plotCurve(self, Xi, Yi, Thetai, UL, UR,color="blue"):
+        r = self.wheelRadius
+        L = self.wheelLength
+        t = 0
+        dt = 0.1
+        Xn = Xi
+        Yn = Yi
+        Thetan = 3.14 * Thetai / 180
+        while t<1:
+            t = t + dt
+            Xs = Xn
+            Ys = Yn
+            Xn += 0.5*r * (UL + UR) * math.cos(Thetan) * dt
+            Yn += 0.5*r * (UL + UR) * math.sin(Thetan) * dt
+            Thetan += (r / L) * (UR - UL) * dt
+            self.ax.plot([Xs, Xn], [Ys, Yn], color=color)
 
 
 class pathFinder():
@@ -250,7 +268,6 @@ class pathFinder():
         self.stepSize = stepSize
         self.goalThreshold = goalThreshold
         # self.setActions()
-        self.obstacle = Obstacle(width, height, r = r, c = c, threshold=threshold)
         self.actions = [[0, self.Ur],
                    [self.Ul, 0],
                    [0, self.Ul],
@@ -260,9 +277,13 @@ class pathFinder():
                    [self.Ur, self.Ur],
                    [self.Ul, self.Ul]]
         self.actionSet = []
-
+        self.obstacle = Obstacle(width, height, r = r, c = c, threshold=threshold, 
+            actions=self.actions, wheelLength = self.wheelLength, 
+            wheelRadius = self.wheelRadius)
+        
     def setActions(self, presentNode):
         self.actionSet = []
+        index = 0
         for action in self.actions:
             t = 0
             dt = 0.1
@@ -275,7 +296,8 @@ class pathFinder():
                 angle += (self.wheelRadius/self.wheelLength)*(action[1]-action[0])*dt              
                 costToCome = math.sqrt((x-presentNode[0])**2+(presentNode[1]-y)**2)
             angle = 180 * (angle) / 3.14
-            self.actionSet.append([x, y, angle, costToCome])
+            self.actionSet.append([x, y, angle, costToCome, index])
+            index += 1
         # ll = [print(l) for l in self.actionSet] 
         return
 
@@ -315,19 +337,24 @@ class pathFinder():
 
     def trackBack(self, presentNode):
         track = []
+        trackIndex = []
         currentNode = presentNode[:4]
         # track.append(self.goal)
         track.append(currentNode)
+        trackIndex.append(0)
         while currentNode[1:] != self.initial:
             # print(1)
-            currentNode = list(self.obstacle.findVisited(currentNode))
+            l, ind = self.obstacle.findVisited(currentNode)
+            currentNode = list(l)
             # print(currentNode)
             track.append(currentNode)
+            trackIndex.append(ind)
         print("-------------------")
         print("Trackback")
         # print(track)
         track.reverse()
-        return track
+        trackIndex.reverse()
+        return track, trackIndex
 
     def findPath(self):
         if self.initialCheck():
@@ -341,9 +368,10 @@ class pathFinder():
                     print(" Goal Reached ")
                     # print(presentNode)
                     # self.obstacle.addVisited(presentNode)
-                    path = self.trackBack(presentNode)
-                    # print(path)
-                    # self.obstacle.plotAll(path)
+                    path, trackIndex = self.trackBack(presentNode)
+                    print(path)
+                    # self.obstacle.explorationPlot()
+                    self.obstacle.plotPath(path, trackIndex)
                     return
                 self.setActions(presentNode)
                 for action in self.actionSet:
@@ -363,18 +391,18 @@ class pathFinder():
                         if not self.obstacle.checkVisited(newNode):
                             ##### Node is not visited so add to data
                             presentNode[0] = newCostToCome
-                            self.obstacle.addVisited(newNode, presentNode[:4])
+                            self.obstacle.addVisited(newNode, presentNode[:4], action[4])
                             newNode[0] = newCostToCome + costToGo
                             heappush(self.Data, newNode)
                             print("Added to queue")
                             print(newNode)
                         else: #### Node is visited so check previous cost
-                            previousVisited = self.obstacle.findVisited(newNode)
+                            previousVisited,_ = self.obstacle.findVisited(newNode)
                             previousCost = previousVisited[0]
                             print("visited")
                             if previousCost > newCostToCome:
                                 presentNode[0] = newCostToCome
-                                self.obstacle.addVisited(newNode, presentNode[:4])
+                                self.obstacle.addVisited(newNode, presentNode[:4], action[4])
                                 print("Low cost")
                     else:
                         print("Obstacle")
