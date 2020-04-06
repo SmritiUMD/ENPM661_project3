@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import argparse
 
 class Obstacle():
-    def __init__(self, width = 1000, height = 1020, r = 1, c = 1, threshold=0.5):
+    def __init__(self, width = 1020, height = 1020, r = 1, c = 1, threshold=0.5):
         self.threshold = threshold #### Resolution
         self.W = int(width/threshold) 
         self.H = int(height/threshold) 
@@ -21,29 +21,70 @@ class Obstacle():
         self.plotData_U = []
         self.plotData_V = []
 
-
+    def plotSpace(self):
+        centX, centY, radii = 0,0,1
+        circle_1_X = [centX+radii*math.cos(i) for i in np.arange(0,2*3.14,0.01)]
+        circle_1_Y = [centY+radii*math.sin(i) for i in np.arange(0,2*3.14,0.01)]
+        centX, centY, radii = 2,3,1
+        circle_2_X = [centX+radii*math.cos(i) for i in np.arange(0,2*3.14,0.01)]
+        circle_2_Y = [centY+radii*math.sin(i) for i in np.arange(0,2*3.14,0.01)]
+        centX, centY, radii = 2,-3,1
+        circle_3_X = [centX+radii*math.cos(i) for i in np.arange(0,2*3.14,0.01)]
+        circle_3_Y = [centY+radii*math.sin(i) for i in np.arange(0,2*3.14,0.01)]
+        centX, centY, radii = -2,-3,1
+        circle_4_X = [centX+radii*math.cos(i) for i in np.arange(0,2*3.14,0.01)]
+        circle_4_Y = [centY+radii*math.sin(i) for i in np.arange(0,2*3.14,0.01)]
+        square_1_x, square_1_y = [-2.75, -1.25, -1.25, -2.75, -2.75],[ 3.75,  3.75,  2.25,  2.25,  3.75]
+        square_2_x, square_2_y = [3.25, 4.75, 4.75, 3.25, 3.25],[ 1.5/2,  1.5/2, -1.5/2, -1.5/2,  1.5/2]
+        square_3_x, square_3_y = [-3.25, -4.75, -4.75, -3.25, -3.25],[  1.5/2,   1.5/2,  -1.5/2,  -1.5/2,   1.5/2]
+        plt.plot(circle_1_X, circle_1_Y)
+        plt.plot(circle_2_X, circle_2_Y)
+        plt.plot(circle_3_X, circle_3_Y)
+        plt.plot(circle_4_X, circle_4_Y)
+        plt.plot(square_1_x, square_1_y)
+        plt.plot(square_2_x, square_2_y)
+        plt.plot(square_3_x, square_3_y)
+        plt.xlim(-10.2/2, 10.2/2)
+        plt.ylim(-10.2/2, 10.2/2)
+        x = []
+        y = []
+        for i in range()
+        plt.show()
 
     def ObsCheck(self, i, j):
+        ## i = x-direction
+        ## j = y-direction
+        ## Returns true if not in obstacle
+        ## Returns false if in obstacle
         # Check all the obstacles
         if self.checkBoundary(i,j):
             return False
-        elif self.checkInCircle(i,1020-j,(700,200),20):
+        elif self.checkInCircle(i, j, (0,0), 1):
             return False
-        elif self.checkInCircle(i,1020-j,(300,800),20):
+        elif self.checkInCircle(i, j, (2,3), 1):
             return False
-        elif self.checkInCircle(i,1020-j,(700,800),20):
+        elif self.checkInCircle(i, j, (2,-3), 1):
             return False
-        
-        elif self.checkInQuad(i,1020-j,(25,525), (175, 525), (175, 475), (25,475)):
+        elif self.checkInCircle(i, j, (-2,-3), 1):
+            return False   
+        elif self.checkInSquare(i, j, 3.25, 4.75, 0.75, -0.75):
             return False
-        elif self.checkInQuad(i,1020-j,(845, 525), (995, 525), (995, 475), (845, 475)):
+        elif self.checkInSquare(i, j, -4.75, -3.25, 0.75, -0.75):
             return False
-        elif self.checkInQuad(i,1020-j,(225,175), (375,175), (375,125), (225,125)):
+        elif self.checkInSquare(i, j, -2.75, -1.25, 3.75, 2.25):
             return False
-        
         else:
             return True
 
+    def checkInSquare(self, i, j, left, right, top, bottom):
+        l = left - self.r - self.c
+        r = right + self.r + self.c
+        t = top + self.r + self.c
+        b = bottom - self.r - self.c
+        if (i<r and i>l and j<t and j>b):
+            return True
+        else:
+            return False
 
     def checkInCircle(self, i, j, center, radius):
         ## i = x-direction
@@ -53,7 +94,6 @@ class Obstacle():
             return True
         else:
             return False
-
 
     def checkInQuad(self, i, j, vertex1, vertex2, vertex3, vertex4):
         x1, y1 = vertex1[0], vertex1[1]
@@ -142,9 +182,23 @@ class Obstacle():
         plt.ioff()
         plt.show()
 
+    # def plotSpace(self):
+    #     plt.ion()
+    #     fig, ax = plt.subplots()
+    #     for x in range(0, self.H, 10):
+    #         for y in range(0, self.W, 10):
+    #             print("Checking",str(x)," ",str(y))
+    #             if self.ObsCheck(x,y):
+    #                 print("Not in obstacle")
+    #                 ax.scatter(x,y)
+    #                 plt.pause(0.0001)
+    #     plt.ioff()
+    #     plt.show()
+    #     pass
+
 class pathFinder():
     def __init__(self, initial, goal, thetaStep = 30, stepSize = 1, goalThreshold = 2,
-        width = 1020, height = 1000, threshold = 0.5, r = 1, c = 1, wheelLength=5, Ur=2,Ul=2, wheelRadius=2,
+        width = 1020, height = 1020, threshold = 0.5, r = 1, c = 1, wheelLength=5, Ur=2,Ul=2, wheelRadius=2,
         dt=0.1, dtheta=0):
         self.initial = initial
         self.goal = goal
@@ -165,7 +219,7 @@ class pathFinder():
 
         self.stepSize = stepSize
         self.goalThreshold = goalThreshold
-        self.setActions()
+        # self.setActions()
         self.obstacle = Obstacle(width, height, r = r, c = c, threshold=threshold)
 
 
@@ -308,11 +362,13 @@ initial = [int(i) for i in start[1:-1].split(',')]
 goal = [int(i) for i in end[1:-1].split(',')] 
 
 
-
 solver = pathFinder(initial, goal, stepSize=StepSize,
-    goalThreshold = GoalThreshold, width = 300, height = 200, threshold = Threshold,
+    goalThreshold = GoalThreshold, width = 1020, height = 1020, threshold = Threshold,
     r=r, c=c)
-solver.findPath()
+# solver.findPath()
+solver.obstacle.plotSpace()
+
+
 
 
 
