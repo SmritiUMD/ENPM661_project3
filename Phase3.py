@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import argparse
 
 class Obstacle():
-    def __init__(self, width = 1020, height = 1020, r = 1, c = 1, threshold=0.5):
+    def __init__(self, width = 10, height = 10, r = 1, c = 1, threshold=0.01):
         self.threshold = threshold #### Resolution
         self.W = int(width/threshold) 
         self.H = int(height/threshold) 
@@ -46,10 +46,24 @@ class Obstacle():
         plt.plot(square_3_x, square_3_y)
         plt.xlim(-10.2/2, 10.2/2)
         plt.ylim(-10.2/2, 10.2/2)
-        x = []
-        y = []
-        for i in range()
+        self.checkObstcaleSpace()
+        #################
+        pass
+
+    ###### Just to plot the obstacle space and confirm the function
+    def checkObstcaleSpace(self):
+        xx = np.arange(-5,5,0.05)
+        yy = np.arange(-5,5,0.05)
+        x_ = []
+        y_ = []
+        for x in xx:
+            for y in yy:
+                if self.ObsCheck(x,y):
+                    x_.append(x)
+                    y_.append(y)
+        plt.scatter(x_, y_, s=0.1)
         plt.show()
+        pass
 
     def ObsCheck(self, i, j):
         ## i = x-direction
@@ -106,7 +120,7 @@ class Obstacle():
 
     def checkBoundary(self,i,j):
         # print(i,j)
-        if i < (1000 - self.r - self.c) and i > (self.r + self.c) and j < (1020 - self.r - self.c) and j > (self.r + self.c):
+        if i < (5 - self.r - self.c) and i > (-5 + self.r + self.c) and j < (5 - self.r - self.c) and j > (-5+self.r + self.c):
             # print("In")
             return False
         return True
@@ -182,23 +196,10 @@ class Obstacle():
         plt.ioff()
         plt.show()
 
-    # def plotSpace(self):
-    #     plt.ion()
-    #     fig, ax = plt.subplots()
-    #     for x in range(0, self.H, 10):
-    #         for y in range(0, self.W, 10):
-    #             print("Checking",str(x)," ",str(y))
-    #             if self.ObsCheck(x,y):
-    #                 print("Not in obstacle")
-    #                 ax.scatter(x,y)
-    #                 plt.pause(0.0001)
-    #     plt.ioff()
-    #     plt.show()
-    #     pass
 
 class pathFinder():
-    def __init__(self, initial, goal, thetaStep = 30, stepSize = 1, goalThreshold = 2,
-        width = 1020, height = 1020, threshold = 0.5, r = 1, c = 1, wheelLength=5, Ur=2,Ul=2, wheelRadius=2,
+    def __init__(self, initial, goal, thetaStep = 30, stepSize = 1, goalThreshold = 0.1,
+        width = 10, height = 10, threshold = 0.5, r = 0.1, c = 0.1, wheelLength = 0.038, Ur=2,Ul=2, wheelRadius=2,
         dt=0.1, dtheta=0):
         self.initial = initial
         self.goal = goal
@@ -221,35 +222,40 @@ class pathFinder():
         self.goalThreshold = goalThreshold
         # self.setActions()
         self.obstacle = Obstacle(width, height, r = r, c = c, threshold=threshold)
-
-
-    def setActions(self):
+        self.actions = [[0, self.Ur],
+                   [self.Ul, 0],
+                   [0, self.Ul],
+                   [self.Ur, 0],
+                   [self.Ul, self.Ur],
+                   [self.Ur, self.Ul],
+                   [self.Ur, self.Ur],
+                   [self.Ul, self.Ul]]
         self.actionSet = []
-        t=0
-        dt=0.1
 
-        actions=[[0,0],[0,self.Ur],[self.Ul,0],[0,self.Ul],[self.Ur,0],[self.Ul,self.Ur],[self.Ur,self.Ul],[self.Ur,self.Ur],[self.Ul,self.Ul]]
-        initial[2]=3.14*initial[2]/180  
-        angle=initial[2]   
-        while(t<1):
-            t=t+dt
-            for action in actions:
-                x=(self.wheelRadius)*(action[0]+action[1])*math.cos(angle)*dt       
-                y=(self.wheelRadius)*(action[0]+action[1])*math.sin(angle)*dt      
-                dtheta=(self.wheelRadius/self.wheelLength)*(action[0]-action[1])              
-                angle=angle+dtheta
-                costToCome = math.sqrt((x-initial[0])**2+(initial[1]-y)**2)
-                self.actionSet.append([x, y, angle, costToCome])
-                print(self.actionSet)
-        pass
+    def setActions(self, presentNode):
+        self.actionSet = []
+        for action in self.actions:
+            t = 0
+            dt = 0.1
+            x, y, angle = presentNode[0], presentNode[1], presentNode[2]
+            angle = 3.14*angle/180.0 
+            while(t<1):
+                t = t+dt
+                x += (self.wheelRadius)*(action[0]+action[1])*math.cos(angle)*dt       
+                y += (self.wheelRadius)*(action[0]+action[1])*math.sin(angle)*dt      
+                angle += (self.wheelRadius/self.wheelLength)*(action[1]-action[0])*dt              
+                costToCome = math.sqrt((x-presentNode[0])**2+(presentNode[1]-y)**2)
+            self.actionSet.append([x, y, angle, costToCome])
+            # print(self.actionSet)
+        return
 
     def initialCheck(self):
     #writing the condition for the case when start or goal node are defined in an obstacle
         # if (self.obstacle(initial[0],initial[1])==False or (self.obstacle(goal[0],goal[1])==False)):
-        if not self.obstacle.ObsCheck(self.goal[0], 200-self.goal[1]):
+        if not self.obstacle.ObsCheck(self.goal[0], self.goal[1]):
             print("Goal in obstacle field")
             return False
-        elif not self.obstacle.ObsCheck(self.initial[0], 200-self.goal[1]):
+        elif not self.obstacle.ObsCheck(self.initial[0], self.goal[1]):
             print("Initial position in obstacle field")
             return False
         else:
@@ -267,8 +273,12 @@ class pathFinder():
 
     def goalReached(self, current):  # function to check if the explored point is inside threshold area around the goal or not
         x, y = current[1], current[2]
+        print(x,y)
+        print(self.goal)
         # ((x - goal[0])**2 + (y - goal[1])**2 <= (self.goalThreshold)**2) and (abs(self.goal[2] - current[2]) <= angleThreshold):
-        if (x - goal[0])**2 + (y - goal[1])**2 <= (self.goalThreshold)**2:
+        if (x - self.goal[0])**2 + (y - self.goal[1])**2 <= (self.goalThreshold)**2:
+            print((x - self.goal[0])**2 + (y - self.goal[1])**2)
+            print((self.goalThreshold)**2)
             return True
         else:
             return False
@@ -301,8 +311,9 @@ class pathFinder():
                     # self.obstacle.addVisited(presentNode)
                     path = self.trackBack(presentNode)
                     print(path)
-                    self.obstacle.plotAll(path)
+                    # self.obstacle.plotAll(path)
                     return
+                self.setActions(presentNode)
                 for action in self.actionSet:
                     ##### node = [ x , y , angle , cost]
                     ##### Data = [ cost , selfID , parentID ]
@@ -315,7 +326,7 @@ class pathFinder():
                     costToGo = self.heuristics(newNode)
                     # newNode[0] = newCost
                     # print("Found a new node " + str(newNode))
-                    # print(newNode)
+                    print(presentNode , newNode)
                     if self.obstacle.ObsCheck(newNodeX, newNodeY):
                         if not self.obstacle.checkVisited(newNode):
                             ##### Node is not visited so add to data
@@ -334,16 +345,22 @@ class pathFinder():
         return
 
 Parser = argparse.ArgumentParser()
-Parser.add_argument('--Start', default="[50,30,60]", help='Give inital point')
-Parser.add_argument('--End', default="[150,150,0]", help='Give final point')
-Parser.add_argument('--RobotRadius', default=1, help='Give robot radius')
-Parser.add_argument('--Clearance', default=1, help='Give robot clearance')
+Parser.add_argument('--Start', default="[2, 0, 0]", help='Give inital point')
+Parser.add_argument('--End', default="[2, -1, 0]", help='Give final point')
+Parser.add_argument('--RobotRadius', default=0.01, help='Give robot radius')
+Parser.add_argument('--Clearance', default=0.01, help='Give robot clearance')
 Parser.add_argument('--ShowAnimation', default=1, help='1 if want to show animation else 0')
 Parser.add_argument('--Framerate', default=30, help='Will show next step after this many steps. Made for fast viewing')
 Parser.add_argument('--thetaStep', default=30, help='Possibilities of action for angle')
 Parser.add_argument('--StepSize', default=2, help='Step size')
 Parser.add_argument('--Threshold', default=0.5, help='Threshold value for appriximation')
-Parser.add_argument('--GoalThreshold', default=2, help='Circle radius for goal point')
+Parser.add_argument('--GoalThreshold', default=0.1, help='Circle radius for goal point')
+Parser.add_argument('--WheelRadius', default=0.038, help='Radius of the robot wheel in meters')
+Parser.add_argument('--WheelLength', default=0.354, help='Distance between two wheels')
+Parser.add_argument('--LeftRPM', default=5, help='RPM of left wheel')
+Parser.add_argument('--RightRPM', default=10, help='RPM of right wheel')
+
+#
 Args = Parser.parse_args()
 
 Args = Parser.parse_args()
@@ -358,14 +375,18 @@ StepSize = int(Args.StepSize)
 Threshold = float(Args.Threshold)
 GoalThreshold = float(Args.GoalThreshold)
 
-initial = [int(i) for i in start[1:-1].split(',')]
-goal = [int(i) for i in end[1:-1].split(',')] 
+initial = [float(i) for i in start[1:-1].split(',')]
+goal = [float(i) for i in end[1:-1].split(',')] 
 
+wheelLength = float(Args.WheelLength) 
+Ur = float(Args.RightRPM)
+Ul = float(Args.LeftRPM) 
+wheelRadius = float(Args.   WheelRadius)
 
 solver = pathFinder(initial, goal, stepSize=StepSize,
-    goalThreshold = GoalThreshold, width = 1020, height = 1020, threshold = Threshold,
-    r=r, c=c)
-# solver.findPath()
+    goalThreshold = GoalThreshold, width = 10, height = 10, threshold = Threshold,
+    r=r, c=c, wheelLength = wheelLength, Ur = Ur, Ul = Ul, wheelRadius = wheelRadius)
+solver.findPath()
 solver.obstacle.plotSpace()
 
 
