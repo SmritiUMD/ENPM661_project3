@@ -6,20 +6,28 @@ import matplotlib.pyplot as plt
 import argparse
 
 class Obstacle():
-    def __init__(self, width = 10, height = 10, r = 1, c = 1, threshold=0.01):
+    def __init__(self, width = 10, height = 10, r = 1, c = 1, threshold=0.01, thetaStep = 30):
         self.threshold = threshold #### Resolution
-        self.W = int(width/threshold) 
-        self.H = int(height/threshold) 
+        self.W = int(width/threshold) +1
+        self.H = int(height/threshold) +1
         self.r = r
         self.c = c
+        self.thetaStep = thetaStep
         ### all angles and cost and selfID
         ### Fourth dimention [ cost , x , y , theta ] -- of parent
+        # self.explored = np.zeros([self.H, self.W, 360//thetaStep, 4])
         self.explored = np.zeros([self.H, self.W, 4])
         ### [ startX , startY , endX , endY ]
         self.plotData_X = []
         self.plotData_Y = []
         self.plotData_U = []
         self.plotData_V = []
+        plt.ion()
+        self.fig, self.ax = plt.subplots()
+        self.plotSpace()
+
+    def plotCurve(self, node, parentNode):
+        
 
     def plotSpace(self):
         centX, centY, radii = 0,0,1
@@ -37,16 +45,16 @@ class Obstacle():
         square_1_x, square_1_y = [-2.75, -1.25, -1.25, -2.75, -2.75],[ 3.75,  3.75,  2.25,  2.25,  3.75]
         square_2_x, square_2_y = [3.25, 4.75, 4.75, 3.25, 3.25],[ 1.5/2,  1.5/2, -1.5/2, -1.5/2,  1.5/2]
         square_3_x, square_3_y = [-3.25, -4.75, -4.75, -3.25, -3.25],[  1.5/2,   1.5/2,  -1.5/2,  -1.5/2,   1.5/2]
-        plt.plot(circle_1_X, circle_1_Y)
-        plt.plot(circle_2_X, circle_2_Y)
-        plt.plot(circle_3_X, circle_3_Y)
-        plt.plot(circle_4_X, circle_4_Y)
-        plt.plot(square_1_x, square_1_y)
-        plt.plot(square_2_x, square_2_y)
-        plt.plot(square_3_x, square_3_y)
-        plt.xlim(-10.2/2, 10.2/2)
-        plt.ylim(-10.2/2, 10.2/2)
-        self.checkObstcaleSpace()
+        self.ax.plot(circle_1_X, circle_1_Y)
+        self.ax.plot(circle_2_X, circle_2_Y)
+        self.ax.plot(circle_3_X, circle_3_Y)
+        self.ax.plot(circle_4_X, circle_4_Y)
+        self.ax.plot(square_1_x, square_1_y)
+        self.ax.plot(square_2_x, square_2_y)
+        self.ax.plot(square_3_x, square_3_y)
+        self.ax.set_xlim(-10.2/2, 10.2/2)
+        self.ax.set_ylim(-10.2/2, 10.2/2)
+        # self.checkObstcaleSpace()
         #################
         pass
 
@@ -125,42 +133,63 @@ class Obstacle():
             return False
         return True
 
+    def getMatrixIndices(self, node):
+        x,y,a = node[1], node[2], node[3]
+        shiftx, shifty = 5,-5
+        x += shiftx
+        y = abs(shifty + y)
+        ### i , j , k ----- height , width , angle
+        i = int(round(y/self.threshold))
+        j = int(round(x/self.threshold))
+        k = int(round(a/self.thetaStep))
+        return i,j,k
+
     def checkVisited(self, node):
         #### node = [ cost , x , y , angle ]
-        checkPosX = int(round(node[1]/self.threshold))
-        checkPosY = int(round(node[2]/self.threshold))
-        checkPosA = int(node[3])
-        print(node[1], node[2])
-        print(checkPosX, checkPosY)
-        if self.explored[checkPosY, checkPosX, checkPosA,3] != 0:
+        # checkPosX = int(round(node[1]/self.threshold))
+        # checkPosY = int(round(node[2]/self.threshold))
+        # checkPosA = int(node[3])
+        # print(node[1], node[2])
+        # print(checkPosX, checkPosY)
+        i,j,k = self.getMatrixIndices(node)
+        # print(self.explored.shape)
+        print(i,j,k)
+        if self.explored[i, j, 3] != 0:
             return True ##### Yes...it is visited
         else:
             return False ##### Not visited
 
     def discret(self,node):
-        checkPosX = int(round(node[1]/self.threshold))
-        checkPosY = int(round(node[2]/self.threshold))
-        checkPosA = int(node[3])
-        return [node[0], checkPosY, checkPosX, checkPosA]
+        # checkPosX = int(round(node[1]/self.threshold))
+        # checkPosY = int(round(node[2]/self.threshold))
+        # checkPosA = int(node[3])
+        i,j,k = self.getMatrixIndices(node)
+        return [node[0], i, j, k]
 
     def findVisited(self, node):
-        checkPosX = int(round(node[1]/self.threshold))
-        checkPosY = int(round(node[2]/self.threshold))
-        checkPosA = int(node[3])*dt 
+        # checkPosX = int(round(node[1]/self.threshold))
+        # checkPosY = int(round(node[2]/self.threshold))
+        # checkPosA = int(node[3])*dt 
         # print(checkPosX, checkPosY, checkPosA)
-        return self.explored[checkPosY, checkPosX, checkPosA, :]
+        i,j,k = self.getMatrixIndices(node)
+        return self.explored[i, j, :]
 
     def addVisited(self, node, parentNode):
-        checkPosX = int(round(node[1]/self.threshold))
-        checkPosY = int(round(node[2]/self.threshold))
-        checkPosA = int(node[3])
+        # checkPosX = int(round(node[1]/self.threshold))
+        # checkPosY = int(round(node[2]/self.threshold))
+        # checkPosA = int(node[3])
+        i,j,k = self.getMatrixIndices(node)
         self.plotData_X.append(parentNode[1])
         self.plotData_Y.append(parentNode[2])
         self.plotData_U.append(node[1] - parentNode[1]) 
         self.plotData_V.append(node[2] - parentNode[2])
+        self.ax.scatter(node[1], node[2])
+        plt.pause(0.0001)
         # self.explored[checkPosX, checkPosY, checkPosA, 3] = newCost
-        self.explored[checkPosY, checkPosX, checkPosA, :] = np.array(parentNode)
+        self.explored[i, j, :] = np.array(parentNode)
         return
+
+    # def plotAll(self):
 
     def plotAll(self, path):
         plt.ion()
@@ -237,7 +266,7 @@ class pathFinder():
         for action in self.actions:
             t = 0
             dt = 0.1
-            x, y, angle = presentNode[0], presentNode[1], presentNode[2]
+            x, y, angle = presentNode[1], presentNode[2], presentNode[3]
             angle = 3.14*angle/180.0 
             while(t<1):
                 t = t+dt
@@ -245,8 +274,9 @@ class pathFinder():
                 y += (self.wheelRadius)*(action[0]+action[1])*math.sin(angle)*dt      
                 angle += (self.wheelRadius/self.wheelLength)*(action[1]-action[0])*dt              
                 costToCome = math.sqrt((x-presentNode[0])**2+(presentNode[1]-y)**2)
+            angle = 180 * (angle) / 3.14
             self.actionSet.append([x, y, angle, costToCome])
-            # print(self.actionSet)
+        # ll = [print(l) for l in self.actionSet] 
         return
 
     def initialCheck(self):
@@ -277,8 +307,8 @@ class pathFinder():
         print(self.goal)
         # ((x - goal[0])**2 + (y - goal[1])**2 <= (self.goalThreshold)**2) and (abs(self.goal[2] - current[2]) <= angleThreshold):
         if (x - self.goal[0])**2 + (y - self.goal[1])**2 <= (self.goalThreshold)**2:
-            print((x - self.goal[0])**2 + (y - self.goal[1])**2)
-            print((self.goalThreshold)**2)
+            # print((x - self.goal[0])**2 + (y - self.goal[1])**2)
+            # print((self.goalThreshold)**2)
             return True
         else:
             return False
@@ -303,22 +333,24 @@ class pathFinder():
         if self.initialCheck():
             while len(self.Data)>0:
                 presentNode = heappop(self.Data)
+                print("Popped from queue")
+                print(presentNode)
                 previousCost, previousCostToCome = presentNode[0], presentNode[4]
                 if self.goalReached(presentNode):
                     self.goalReach = True
                     print(" Goal Reached ")
-                    print(presentNode)
+                    # print(presentNode)
                     # self.obstacle.addVisited(presentNode)
                     path = self.trackBack(presentNode)
-                    print(path)
+                    # print(path)
                     # self.obstacle.plotAll(path)
                     return
                 self.setActions(presentNode)
                 for action in self.actionSet:
                     ##### node = [ x , y , angle , cost]
                     ##### Data = [ cost , selfID , parentID ]
-                    newNodeX = presentNode[1] + action[0]
-                    newNodeY = presentNode[2] + action[1]
+                    newNodeX = action[0]
+                    newNodeY = action[1]
                     newNodeA = action[2]
                     newNode = [0, newNodeX, newNodeY, newNodeA, 0]
                     newCostToCome = previousCostToCome + action[3]
@@ -326,7 +358,7 @@ class pathFinder():
                     costToGo = self.heuristics(newNode)
                     # newNode[0] = newCost
                     # print("Found a new node " + str(newNode))
-                    print(presentNode , newNode)
+                    # print(presentNode , newNode)
                     if self.obstacle.ObsCheck(newNodeX, newNodeY):
                         if not self.obstacle.checkVisited(newNode):
                             ##### Node is not visited so add to data
@@ -334,14 +366,19 @@ class pathFinder():
                             self.obstacle.addVisited(newNode, presentNode[:4])
                             newNode[0] = newCostToCome + costToGo
                             heappush(self.Data, newNode)
+                            print("Added to queue")
+                            print(newNode)
                         else: #### Node is visited so check previous cost
                             previousVisited = self.obstacle.findVisited(newNode)
                             previousCost = previousVisited[0]
+                            print("visited")
                             if previousCost > newCostToCome:
                                 presentNode[0] = newCostToCome
                                 self.obstacle.addVisited(newNode, presentNode[:4])
-                                
-        print("Could not reach goal..")
+                                print("Low cost")
+                    else:
+                        print("Obstacle")
+        print("Could not reach goal..") 
         return
 
 Parser = argparse.ArgumentParser()
@@ -353,14 +390,13 @@ Parser.add_argument('--ShowAnimation', default=1, help='1 if want to show animat
 Parser.add_argument('--Framerate', default=30, help='Will show next step after this many steps. Made for fast viewing')
 Parser.add_argument('--thetaStep', default=30, help='Possibilities of action for angle')
 Parser.add_argument('--StepSize', default=2, help='Step size')
-Parser.add_argument('--Threshold', default=0.5, help='Threshold value for appriximation')
+Parser.add_argument('--Threshold', default=0.01, help='Threshold value for appriximation')
 Parser.add_argument('--GoalThreshold', default=0.1, help='Circle radius for goal point')
 Parser.add_argument('--WheelRadius', default=0.038, help='Radius of the robot wheel in meters')
 Parser.add_argument('--WheelLength', default=0.354, help='Distance between two wheels')
 Parser.add_argument('--LeftRPM', default=5, help='RPM of left wheel')
 Parser.add_argument('--RightRPM', default=10, help='RPM of right wheel')
 
-#
 Args = Parser.parse_args()
 
 Args = Parser.parse_args()
@@ -387,7 +423,7 @@ solver = pathFinder(initial, goal, stepSize=StepSize,
     goalThreshold = GoalThreshold, width = 10, height = 10, threshold = Threshold,
     r=r, c=c, wheelLength = wheelLength, Ur = Ur, Ul = Ul, wheelRadius = wheelRadius)
 solver.findPath()
-solver.obstacle.plotSpace()
+# solver.obstacle.plotSpace()
 
 
 
