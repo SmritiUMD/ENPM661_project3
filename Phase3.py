@@ -210,7 +210,7 @@ class Obstacle():
             Thetai = path[i][3]
             actionIndex = int(trackIndex[i])
             UL, UR = self.actions[actionIndex][0], self.actions[actionIndex][1]
-            self.plotCurve(Xi, Yi, Thetai, UL, UR, color="red")
+            self.plotCurve(Xi, Yi, Thetai, UL, UR, color="red", lw=1.2)
             plt.pause(0.0001)
         pass
 
@@ -222,11 +222,11 @@ class Obstacle():
             actionIndex = self.whcihAction[i]
             UL, UR = self.actions[actionIndex][0], self.actions[actionIndex][1]
             self.plotCurve(Xi, Yi, Thetai, UL, UR)
-            if i%25==0:
+            if i%50==0:
                 plt.pause(0.0001)
         pass
 
-    def plotCurve(self, Xi, Yi, Thetai, UL, UR,color="blue"):
+    def plotCurve(self, Xi, Yi, Thetai, UL, UR,color="blue",lw=0.5):
         r = self.wheelRadius
         L = self.wheelLength
         t = 0
@@ -238,11 +238,10 @@ class Obstacle():
             t = t + dt
             Xs = Xn
             Ys = Yn
-            Xn += 0.5*r * (UL + UR) * math.cos(Thetan) * dt
-            Yn += 0.5*r * (UL + UR) * math.sin(Thetan) * dt
+            Xn += 0.5 * r * (UL + UR) * math.cos(Thetan) * dt
+            Yn += 0.5 * r * (UL + UR) * math.sin(Thetan) * dt
             Thetan += (r / L) * (UR - UL) * dt
-            self.ax.plot([Xs, Xn], [Ys, Yn], color=color)
-
+            self.ax.plot([Xs, Xn], [Ys, Yn], color=color, linewidth=lw)
 
 class pathFinder():
     def __init__(self, initial, goal, thetaStep = 30, stepSize = 1, goalThreshold = 0.1,
@@ -291,8 +290,8 @@ class pathFinder():
             angle = 3.14*angle/180.0 
             while(t<1):
                 t = t+dt
-                x += (self.wheelRadius)*(action[0]+action[1])*math.cos(angle)*dt       
-                y += (self.wheelRadius)*(action[0]+action[1])*math.sin(angle)*dt      
+                x += 0.5*(self.wheelRadius)*(action[0]+action[1])*math.cos(angle)*dt       
+                y += 0.5*(self.wheelRadius)*(action[0]+action[1])*math.sin(angle)*dt      
                 angle += (self.wheelRadius/self.wheelLength)*(action[1]-action[0])*dt              
                 costToCome = math.sqrt((x-presentNode[0])**2+(presentNode[1]-y)**2)
             angle = 180 * (angle) / 3.14
@@ -370,7 +369,7 @@ class pathFinder():
                     # self.obstacle.addVisited(presentNode)
                     path, trackIndex = self.trackBack(presentNode)
                     print(path)
-                    # self.obstacle.explorationPlot()
+                    self.obstacle.explorationPlot()
                     self.obstacle.plotPath(path, trackIndex)
                     return
                 self.setActions(presentNode)
@@ -392,7 +391,7 @@ class pathFinder():
                             ##### Node is not visited so add to data
                             presentNode[0] = newCostToCome
                             self.obstacle.addVisited(newNode, presentNode[:4], action[4])
-                            newNode[0] = newCostToCome + costToGo
+                            newNode[0] = newCostToCome + 4*costToGo
                             heappush(self.Data, newNode)
                             print("Added to queue")
                             print(newNode)
@@ -410,7 +409,7 @@ class pathFinder():
         return
 
 Parser = argparse.ArgumentParser()
-Parser.add_argument('--Start', default="[2, 0, 0]", help='Give inital point')
+Parser.add_argument('--Start', default="[2, 1, 0]", help='Give inital point')
 Parser.add_argument('--End', default="[2, -1, 0]", help='Give final point')
 Parser.add_argument('--RobotRadius', default=0.01, help='Give robot radius')
 Parser.add_argument('--Clearance', default=0.01, help='Give robot clearance')
