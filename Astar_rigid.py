@@ -369,7 +369,6 @@ Parser.add_argument('--thetaStep', default=30, help='Possibilities of action for
 Parser.add_argument('--StepSize', default=2, help='Step size')
 Parser.add_argument('--Threshold', default=0.5, help='Threshold value for appriximation')
 Parser.add_argument('--GoalThreshold', default=2, help='Circle radius for goal point')
-Args = Parser.parse_args()
 
 Args = Parser.parse_args()
 

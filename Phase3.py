@@ -161,7 +161,7 @@ class Obstacle():
         # print(checkPosX, checkPosY)
         i,j,k = self.getMatrixIndices(node)
         # print(self.explored.shape)
-        print(i,j,k)
+        # print(i,j,k)
         if self.explored[i, j, 3] != 0:
             return True ##### Yes...it is visited
         else:
@@ -263,10 +263,11 @@ class pathFinder():
         self.wheelLength=wheelLength
         self.Ur=Ur
         self.Ul=Ul
-
         self.stepSize = stepSize
         self.goalThreshold = goalThreshold
-        # self.setActions()
+        self.path = []
+        self.trackIndex = []
+        self.goalReach = False
         self.actions = [[0, self.Ur],
                    [self.Ul, 0],
                    [0, self.Ul],
@@ -288,12 +289,16 @@ class pathFinder():
             dt = 0.1
             x, y, angle = presentNode[1], presentNode[2], presentNode[3]
             angle = 3.14*angle/180.0 
+            costToCome = 0
             while(t<1):
                 t = t+dt
-                x += 0.5*(self.wheelRadius)*(action[0]+action[1])*math.cos(angle)*dt       
-                y += 0.5*(self.wheelRadius)*(action[0]+action[1])*math.sin(angle)*dt      
+                xnew = 0.5*(self.wheelRadius)*(action[0]+action[1])*math.cos(angle)*dt
+                ynew = 0.5*(self.wheelRadius)*(action[0]+action[1])*math.sin(angle)*dt
+                x += xnew       
+                y += ynew      
                 angle += (self.wheelRadius/self.wheelLength)*(action[1]-action[0])*dt              
-                costToCome = math.sqrt((x-presentNode[0])**2+(presentNode[1]-y)**2)
+                # costToCome = math.sqrt((x-presentNode[0])**2+(presentNode[1]-y)**2)
+                costToCome += math.sqrt(xnew**2 + ynew**2)
             angle = 180 * (angle) / 3.14
             self.actionSet.append([x, y, angle, costToCome, index])
             index += 1
@@ -324,8 +329,8 @@ class pathFinder():
 
     def goalReached(self, current):  # function to check if the explored point is inside threshold area around the goal or not
         x, y = current[1], current[2]
-        print(x,y)
-        print(self.goal)
+        # print(x,y)
+        # print(self.goal)
         # ((x - goal[0])**2 + (y - goal[1])**2 <= (self.goalThreshold)**2) and (abs(self.goal[2] - current[2]) <= angleThreshold):
         if (x - self.goal[0])**2 + (y - self.goal[1])**2 <= (self.goalThreshold)**2:
             # print((x - self.goal[0])**2 + (y - self.goal[1])**2)
@@ -356,21 +361,25 @@ class pathFinder():
         return track, trackIndex
 
     def findPath(self):
+        counter = 0
         if self.initialCheck():
             while len(self.Data)>0:
+                counter+=1
+                if counter%1000==0:
+                    print(counter)
                 presentNode = heappop(self.Data)
-                print("Popped from queue")
-                print(presentNode)
+                # print("Popped from queue")
+                # print(presentNode)
                 previousCost, previousCostToCome = presentNode[0], presentNode[4]
                 if self.goalReached(presentNode):
                     self.goalReach = True
                     print(" Goal Reached ")
                     # print(presentNode)
                     # self.obstacle.addVisited(presentNode)
-                    path, trackIndex = self.trackBack(presentNode)
-                    print(path)
-                    self.obstacle.explorationPlot()
-                    self.obstacle.plotPath(path, trackIndex)
+                    self.path, self.trackIndex = self.trackBack(presentNode)
+                    # print(self.path)
+                    # self.obstacle.explorationPlot()
+                    self.obstacle.plotPath(self.path, self.trackIndex)
                     return
                 self.setActions(presentNode)
                 for action in self.actionSet:
@@ -391,66 +400,65 @@ class pathFinder():
                             ##### Node is not visited so add to data
                             presentNode[0] = newCostToCome
                             self.obstacle.addVisited(newNode, presentNode[:4], action[4])
-                            newNode[0] = newCostToCome + 4*costToGo
+                            newNode[0] = newCostToCome + costToGo
                             heappush(self.Data, newNode)
-                            print("Added to queue")
-                            print(newNode)
+                            # print("Added to queue")
+                            # print(newNode)
                         else: #### Node is visited so check previous cost
                             previousVisited,_ = self.obstacle.findVisited(newNode)
                             previousCost = previousVisited[0]
-                            print("visited")
+                            # print("visited")
                             if previousCost > newCostToCome:
                                 presentNode[0] = newCostToCome
                                 self.obstacle.addVisited(newNode, presentNode[:4], action[4])
-                                print("Low cost")
-                    else:
-                        print("Obstacle")
+                                # print("Low cost")
         print("Could not reach goal..") 
         return
 
-Parser = argparse.ArgumentParser()
-Parser.add_argument('--Start', default="[2, 1, 0]", help='Give inital point')
-Parser.add_argument('--End', default="[2, -1, 0]", help='Give final point')
-Parser.add_argument('--RobotRadius', default=0.01, help='Give robot radius')
-Parser.add_argument('--Clearance', default=0.01, help='Give robot clearance')
-Parser.add_argument('--ShowAnimation', default=1, help='1 if want to show animation else 0')
-Parser.add_argument('--Framerate', default=30, help='Will show next step after this many steps. Made for fast viewing')
-Parser.add_argument('--thetaStep', default=30, help='Possibilities of action for angle')
-Parser.add_argument('--StepSize', default=2, help='Step size')
-Parser.add_argument('--Threshold', default=0.01, help='Threshold value for appriximation')
-Parser.add_argument('--GoalThreshold', default=0.1, help='Circle radius for goal point')
-Parser.add_argument('--WheelRadius', default=0.038, help='Radius of the robot wheel in meters')
-Parser.add_argument('--WheelLength', default=0.354, help='Distance between two wheels')
-Parser.add_argument('--LeftRPM', default=5, help='RPM of left wheel')
-Parser.add_argument('--RightRPM', default=10, help='RPM of right wheel')
+if __name__ == '__main__':
+	Parser = argparse.ArgumentParser()
+	Parser.add_argument('--Start', default="[-4.5, 4, 120]", help='Give inital point')
+	Parser.add_argument('--End', default="[0, -3, 0]", help='Give final point')
+	Parser.add_argument('--RobotRadius', default=0.01, help='Give robot radius')
+	Parser.add_argument('--Clearance', default=0.01, help='Give robot clearance')
+	Parser.add_argument('--ShowAnimation', default=1, help='1 if want to show animation else 0')
+	Parser.add_argument('--Framerate', default=30, help='Will show next step after this many steps. Made for fast viewing')
+	Parser.add_argument('--thetaStep', default=30, help='Possibilities of action for angle')
+	Parser.add_argument('--StepSize', default=2, help='Step size')
+	Parser.add_argument('--Threshold', default=0.01, help='Threshold value for appriximation')
+	Parser.add_argument('--GoalThreshold', default=0.1, help='Circle radius for goal point')
+	Parser.add_argument('--WheelRadius', default=0.038, help='Radius of the robot wheel in meters')
+	Parser.add_argument('--WheelLength', default=0.354, help='Distance between two wheels')
+	Parser.add_argument('--LeftRPM', default=10, help='RPM of left wheel')
+	Parser.add_argument('--RightRPM', default=10, help='RPM of right wheel')
 
-Args = Parser.parse_args()
+	Args = Parser.parse_args()
 
-Args = Parser.parse_args()
+	Args = Parser.parse_args()
 
-start = Args.Start
-end = Args.End
-r = int(Args.RobotRadius)
-c = int(Args.Clearance)
-animation = int(Args.ShowAnimation)
-framerate = int(Args.Framerate)
-StepSize = int(Args.StepSize)
-Threshold = float(Args.Threshold)
-GoalThreshold = float(Args.GoalThreshold)
+	start = Args.Start
+	end = Args.End
+	r = int(Args.RobotRadius)
+	c = int(Args.Clearance)
+	animation = int(Args.ShowAnimation)
+	framerate = int(Args.Framerate)
+	StepSize = int(Args.StepSize)
+	Threshold = float(Args.Threshold)
+	GoalThreshold = float(Args.GoalThreshold)
 
-initial = [float(i) for i in start[1:-1].split(',')]
-goal = [float(i) for i in end[1:-1].split(',')] 
+	initial = [float(i) for i in start[1:-1].split(',')]
+	goal = [float(i) for i in end[1:-1].split(',')] 
 
-wheelLength = float(Args.WheelLength) 
-Ur = float(Args.RightRPM)
-Ul = float(Args.LeftRPM) 
-wheelRadius = float(Args.   WheelRadius)
+	wheelLength = float(Args.WheelLength) 
+	Ur = float(Args.RightRPM)
+	Ul = float(Args.LeftRPM) 
+	wheelRadius = float(Args.   WheelRadius)
 
-solver = pathFinder(initial, goal, stepSize=StepSize,
-    goalThreshold = GoalThreshold, width = 10, height = 10, threshold = Threshold,
-    r=r, c=c, wheelLength = wheelLength, Ur = Ur, Ul = Ul, wheelRadius = wheelRadius)
-solver.findPath()
-# solver.obstacle.plotSpace()
+	solver = pathFinder(initial, goal, stepSize=StepSize,
+	    goalThreshold = GoalThreshold, width = 10, height = 10, threshold = Threshold,
+	    r=r, c=c, wheelLength = wheelLength, Ur = Ur, Ul = Ul, wheelRadius = wheelRadius)
+	solver.findPath()
+	# solver.obstacle.plotSpace()
 
 
 
